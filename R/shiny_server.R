@@ -307,7 +307,7 @@ ovva_shiny_server <- function(app_data) {
                 ##    }
                 ##    meta_video$video_src <- basename(meta_video$file)
                 ##} else
-                if (app_data$video_serve_method %in% c("lighttpd", "servr")) {
+                if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
                     vf <- fs::path_norm(meta_video$file)
                     if (is.null(vf) || length(vf) < 1) return(NULL)
@@ -327,7 +327,9 @@ ovva_shiny_server <- function(app_data) {
                     }
                     meta_video$video_src <- file.path(app_data$video_server_url, basename(meta_video$file))
                 ##} else if (app_data$video_serve_method == "standalone") {
-                ##    meta_video$video_src <- meta_video$file ## full (local) path
+                    ##    meta_video$video_src <- meta_video$file ## full (local) path
+                } else if (is.function(app_data$video_serve_method)) {
+                    meta_video$video_src <- vapply(meta_video$file, app_data$video_serve_method, FUN.VALUE = "", USE.NAMES = FALSE)
                 } else {
                     stop("unrecognized video_serve_method: ", app_data$video_serve_method)
                 }

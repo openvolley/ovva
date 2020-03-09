@@ -8,7 +8,7 @@ ovva_shiny_ui <- function(app_data) {
                  tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;}"),
                  if (!is.null(app_data$css)) tags$style(app_data$css)
              ),
-        if (app_data$video_serve_method != "standalone")
+        if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr"))
             tags$script("function dvjs_video_onstart() { document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }"),
         if (!is.null(app_data$ui_header)) app_data$ui_header else tags$h2("Volleyball Video Analysis"),
         tags$hr(),

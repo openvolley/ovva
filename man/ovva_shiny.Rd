@@ -7,6 +7,7 @@
 ovva_shiny(
   data_path,
   playlist_handler = ovva_playlist_handler(),
+  video_server = "lighttpd",
   launch_browser = TRUE,
   ...
 )
@@ -15,6 +16,8 @@ ovva_shiny(
 \item{data_path}{character: a named character vector of paths to data files. The names will be used as the competition names. So e.g. \code{c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")}}
 
 \item{playlist_handler}{tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_playlist_handler}} for details)}
+
+\item{video_server}{string or function: if string, either "lighttpd" or "servr". If a function, it will be used to modify the video file path present in each dvw file. Details TBD}
 
 \item{launch_browser}{logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)}
 
