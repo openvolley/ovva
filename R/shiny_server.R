@@ -11,9 +11,13 @@ ovva_shiny_server <- function(app_data) {
         ## play-by-play data for selected season
         pbp <- reactive({
             if (!is.null(input$season) && input$season %in% names(app_data$data_path)) {
-                ## TODO use alldata.rds if available
-                myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                if (file.exists(file.path(app_data$data_path[[input$season]], "alldata.rds"))) {
+                    ## use alldata.rds if available
+                    mydat <- readRDS(file.path(app_data$data_path[[input$season]], "alldata.rds"))
+                } else {
+                    myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                    mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                }
                 mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
                 mutate(mydat, game_id = paste0(.data$game_date,"_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
@@ -28,9 +32,14 @@ ovva_shiny_server <- function(app_data) {
                 metas
             }
             if (!is.null(input$season) && input$season %in% names(app_data$data_path)) {
-                ## TODO use allmeta.rds if available
-                myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
+                if (file.exists(file.path(app_data$data_path[[input$season]], "allmeta.rds"))) {
+                    ## use allmeta.rds if available
+                    tmp <- readRDS(file.path(app_data$data_path[[input$season]], "allmeta.rds"))
+                    check_duplicates(lapply(tmp, function(z) z$meta))
+                } else {
+                    myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                    check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
+                }
             } else {
                 NULL
             }
