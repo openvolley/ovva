@@ -307,7 +307,7 @@ ovva_shiny_server <- function(app_data) {
                 ##    }
                 ##    meta_video$video_src <- basename(meta_video$file)
                 ##} else
-                if (app_data$video_serve_method == "lighttpd") {
+                if (app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
                     vf <- fs::path_norm(meta_video$file)
                     if (is.null(vf) || length(vf) < 1) return(NULL)
