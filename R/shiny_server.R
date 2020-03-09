@@ -388,7 +388,7 @@ ovva_shiny_server <- function(app_data) {
             }
         }
 
-        output$chart_ui <- renderUI(NULL)
+        output$chart_ui <- renderUI(apps_data$chart_renderer)
 ##        preview_filename <- reactiveVal(tempfile(fileext = ".html"))
 ##        output$preview_button_ui <- renderUI({
 ##            if (app_data$video_serve_method != "standalone" || is.null(playlist())) {
