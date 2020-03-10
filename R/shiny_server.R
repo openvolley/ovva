@@ -342,7 +342,7 @@ ovva_shiny_server <- function(app_data) {
                 } else {
                     stop("unrecognized video_serve_method: ", app_data$video_serve_method)
                 }
-                event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block") ~ .data$skill_type,
+                event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                                        .data$skill == "Attack" ~ .data$attack_description),
                                      subtitle = paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team),
                                      subtitleskill = paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code))

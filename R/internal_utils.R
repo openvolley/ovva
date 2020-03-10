@@ -35,6 +35,9 @@ preprocess_data <- function(x) {
         x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lead(.data$match_id) %eq% .data$match_id & lead(.data$set_number) %eq% .data$set_number & !lead(.data$team) %eq% .data$team)
     }
     x <- mutate(x, skilltype = case_when(.data$skill %in% c("Serve", "Reception") ~ .data$skill_type,
-                                         .data$skill == "Attack" ~ .data$attack_description))
+                                         .data$skill == "Attack" ~ .data$attack_description,
+                                         .data$skill == "Set" ~ .data$set_code))
+    x <- mutate(x, skill_type = case_when(.data$skill == "Set" ~ .data$set_code,
+                                          TRUE ~ .data$skill_type))
   x
 }
