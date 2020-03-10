@@ -2,6 +2,7 @@
 
 export(ovva_playlist_handler)
 export(ovva_shiny)
+export(ovva_video_server)
 export(read_dv)
 importFrom(assertthat,assert_that)
 importFrom(assertthat,is.flag)

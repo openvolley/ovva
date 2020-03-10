@@ -22,49 +22,16 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
     for (z in seq_along(data_path)) {
         if (!dir.exists(data_path[z])) stop("the directory '", data_path[z], "' does not exist")
     }
-
     ## sort out the video server
     if (is.function(video_server)) {
         video_server_url <- NULL
         video_server_dir <- NULL
         video_serve_method <- video_server
     } else {
-        video_server_port <- sample.int(4000, 1) + 8000 ## random port from 8001
-        video_server_url <- paste0("http://localhost:", video_server_port, "/")
-        video_server_dir <- tempfile()
-        dir.create(video_server_dir)
-        if (video_server == "lighttpd") {
-            have_lighttpd <- FALSE
-            if (.Platform$OS.type == "unix") {
-                tryCatch({
-                    chk <- sys::exec_internal("lighttpd", "-version")
-                    have_lighttpd <- TRUE
-                }, error = function(e) warning("could not find the lighttpd executable, install it with e.g. 'apt install lighttpd'. Using \"servr\" video option"))
-            }
-            if (!have_lighttpd) video_server <- "servr"
-        }
-        video_serve_method <- video_server
-        if (video_serve_method == "lighttpd") {
-            ## build config file to pass to lighttpd
-            lighttpd_conf_file <- tempfile(fileext = ".conf")
-            cat("server.document-root = \"", video_server_dir, "\"\nserver.port = \"", video_server_port, "\"\n", sep = "", file = lighttpd_conf_file, append = FALSE)
-            lighttpd_pid <- sys::exec_background("lighttpd", c("-D", "-f", lighttpd_conf_file), std_out = FALSE) ## start lighttpd not in background mode
-            lighttpd_cleanup <- function() {
-                message("cleaning up lighttpd")
-                try(tools::pskill(lighttpd_pid), silent = TRUE)
-                unlink(video_server_dir, recursive = TRUE)
-            }
-            onStop(function() try({ lighttpd_cleanup() }, silent = TRUE))
-        } else {
-            ## start servr instance serving from the video source directory
-            servr::httd(dir = video_server_dir, port = video_server_port)
-            onStop(function() {
-                message("cleaning up servr")
-                servr::daemon_stop()
-            })
-        }
+        vsrv <- ovva_video_server(method = video_server)
+        onStop(function() try({ vsrv$cleanup_fun() }, silent = TRUE))
     }
-    app_data <- c(list(data_path = data_path, playlist_handler = playlist_handler, video_serve_method = video_serve_method, video_server_dir = video_server_dir, video_server_url = video_server_url), list(...))
+    app_data <- c(list(data_path = data_path, playlist_handler = playlist_handler, video_serve_method = vsrv$method, video_server_dir = vsrv$dir, video_server_url = vsrv$url), list(...))
     this_app <- list(ui = ovva_shiny_ui(app_data = app_data), server = ovva_shiny_server(app_data = app_data))
     shiny::runApp(this_app, display.mode = "normal", launch.browser = launch_browser)
 }
