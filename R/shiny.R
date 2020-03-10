@@ -2,7 +2,7 @@
 #'
 #' @param data_path character: a named character vector of paths to data files. The names will be used as the competition names. So e.g. `c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")`
 #' @param playlist_handler tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_playlist_handler}} for details)
-#' @param video_server string or function: if string, either "lighttpd" or "servr". If a function, it will be used to modify the video file path present in each dvw file. Details TBD
+#' @param video_server string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD
 #' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)
 #' @param ... : additional parameters passed to the UI and server functions
 #'
@@ -23,7 +23,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
         if (!dir.exists(data_path[z])) stop("the directory '", data_path[z], "' does not exist")
     }
     ## sort out the video server
-    if (is.function(video_server)) {
+    if (is.function(video_server) || (is.string(video_server) && video_server == "none")) {
         video_server_url <- NULL
         video_server_dir <- NULL
         video_serve_method <- video_server

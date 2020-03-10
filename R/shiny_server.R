@@ -1,6 +1,5 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
-
         ## helper function: get the right function from the playlist handler for a given skill and specific
         fun_from_playlist <- function(skill, specific) {
             idx <- which(app_data$playlist_handler$skill %eq% skill & app_data$playlist_handler$specific %eq% specific)
@@ -19,8 +18,10 @@ ovva_shiny_server <- function(app_data) {
                     mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
                 }
                 mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
-                mutate(mydat, game_id = paste0(.data$game_date,"_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
+                mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
+                mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
+                                                  TRUE ~ .data$game_id))
             } else {
                 NULL
             }
@@ -329,16 +330,24 @@ ovva_shiny_server <- function(app_data) {
                             system2("ln", c("-s", thisf, symlink_abspath))
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
+                        } else if (is_youtube_id(vf) || grepl("https?://", vf)) {
+                            ## youtube ID or link to video, don't do anything
                         } else {
                             ## video file does not exist!
                             stop("video file ", thisf, " does not exist, not handled yet")
                         }
                     }
                     meta_video$video_src <- file.path(app_data$video_server_url, basename(meta_video$file))
+                    nidx <- is_youtube_id(meta_video$file) | grepl("https?://", meta_video$file)
+                    ## replace these with verbatim copy of original info
+                    meta_video$video_src[nidx] <- meta_video$file[nidx]
                 ##} else if (app_data$video_serve_method == "standalone") {
                     ##    meta_video$video_src <- meta_video$file ## full (local) path
                 } else if (is.function(app_data$video_serve_method)) {
                     meta_video$video_src <- vapply(meta_video$file, app_data$video_serve_method, FUN.VALUE = "", USE.NAMES = FALSE)
+                } else if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("none")) {
+                    ## do nothing except pass the video file info into video_src
+                    meta_video$video_src <- meta_video$file
                 } else {
                     stop("unrecognized video_serve_method: ", app_data$video_serve_method)
                 }
@@ -346,24 +355,32 @@ ovva_shiny_server <- function(app_data) {
                                                                        .data$skill == "Attack" ~ .data$attack_description),
                                      subtitle = paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team),
                                      subtitleskill = paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code))
-                ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= "local", timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                vpt <- if (all(is_youtube_id(meta_video$video_src))) {
+                           "youtube"
+                       } else {
+                           "local"
+                       }
+                ## TODO also check for mixed sources, which we can't handle yet
+                video_player_type(vpt)
+                ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
             }
         })
 
+        ## video stuff
+        video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         observe({
             if (!is.null(playlist())) {
                 ## when playlist() changes, push it through to the javascript playlist
-                shinyjs::runjs(ovideo::ov_playlist_as_onclick(playlist(), video_id = "dv_player", dvjs_fun = "dvjs_set_playlist_and_play"))
+                if (video_player_type() == "local") {
+                    shinyjs::hide("dvyt_player")
+                    shinyjs::show("dv_player")
+                } else {
+                    shinyjs::hide("dv_player")
+                    shinyjs::show("dvyt_player")
+                }
+                shinyjs::runjs("dvjs_video_stop();")
+                shinyjs::runjs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
             }
-        })
-        ## Video of skills
-        output$player_ui <- renderUI({
-            ##if (app_data$video_serve_method == "standalone") {
-            ##    NULL
-            ##} else {
-                tagList(ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, style = "border: 1px solid black; width: 90%;"),
-                        uiOutput("player_controls_ui")) ## deal with controls manually
-            ##}
         })
         output$player_controls_ui <- renderUI({
             ##if (is.null(playlist()) || app_data$video_serve_method == "standalone") {
@@ -373,31 +390,14 @@ ovva_shiny_server <- function(app_data) {
                          tags$button("Prev", onclick = "dvjs_video_prev();"),
                          tags$button("Next", onclick = "dvjs_video_next();"),
                          tags$button("Pause", onclick = "dvjs_video_pause();"),
-                         actionButton("video_back_1s", "Back 1s"),
+                         tags$button("Back 1s", onclick = "dvjs_jog(-1);"),
                          tags$span(id = "subtitle", "Score"),
                          tags$span(id = "subtitleskill", "Skill"))
             ##}
         })
         observeEvent(input$playback_rate, {
-            if (!is.null(input$playback_rate)) do_video("playback_rate", input$playback_rate)
+            if (!is.null(input$playback_rate)) shinyjs::runjs(paste0("dvjs_set_playback_rate(", input$playback_rate, ");"))
         })
-        observeEvent(input$video_back_1s, do_video("rew", 1.0))
-        ## video helper functions
-        do_video <- function(what, ..., id = "dv_player") {
-            getel <- paste0("document.getElementById('", id, "')")
-            myargs <- list(...)
-            if (what == "toggle_pause") {
-                shinyjs::runjs(paste0("if (", getel, ".paused == true) { ", getel, ".play(); } else { ", getel, ".pause(); }"))
-            } else if (what == "rew") {
-                shinyjs::runjs(paste0(getel, ".currentTime=", getel, ".currentTime - ", myargs[[1]], ";"))
-            } else if (what == "ff") {
-                shinyjs::runjs(paste0(getel, ".currentTime=", getel, ".currentTime + ", myargs[[1]], ";"))
-            } else if (what == "playback_rate") {
-                shinyjs::runjs(paste0(getel, ".playbackRate=", myargs[[1]], ";"))
-            } else {
-                NULL
-            }
-        }
 
         output$chart_ui <- renderUI(app_data$chart_renderer)
 ##        preview_filename <- reactiveVal(tempfile(fileext = ".html"))

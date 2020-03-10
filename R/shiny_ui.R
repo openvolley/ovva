@@ -1,7 +1,7 @@
 ovva_shiny_ui <- function(app_data) {
     fluidPage(
         introjsUI(),
-        ovideo::ov_video_js(youtube = FALSE),
+        ovideo::ov_video_js(youtube = TRUE),
         useShinyjs(),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
@@ -146,9 +146,11 @@ ovva_shiny_ui <- function(app_data) {
             mainPanel(
                 introBox(title = "Video",
                          tabPanel("Video",
-                                  uiOutput("player_ui"),
-                                  uiOutput("preview_button_ui", inline = TRUE),
-                                  uiOutput("open_preview_ui", inline = TRUE),
+                                  tagList(ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, style = "border: 1px solid black; width: 90%;"),
+                                          ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
+                                          uiOutput("player_controls_ui")), ##uiOutput("player_ui"),
+                                  ##uiOutput("preview_button_ui", inline = TRUE),
+                                  ##uiOutput("open_preview_ui", inline = TRUE),
                                   sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)),
                          width = NULL, side = "left"),
                 tabBox(title = "", tabPanel("Summary table",DT::dataTableOutput("official_recap")),

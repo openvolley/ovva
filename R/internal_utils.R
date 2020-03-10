@@ -41,3 +41,7 @@ preprocess_data <- function(x) {
                                           TRUE ~ .data$skill_type))
   x
 }
+
+## identify whether a given string looks like a youtube video ID
+is_youtube_id <- function(z) nchar(z) == 11 & grepl("^[[:alnum:]_\\-]+$", z)
+## is_youtube_id(c("7DnQWfTJiP4", "qwSIgTaWK5s", "a", "qwSIgTaW-5s", "_qwSIgTaWK5"))
