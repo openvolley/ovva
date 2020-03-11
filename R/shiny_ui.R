@@ -98,12 +98,7 @@ ovva_shiny_ui <- function(app_data) {
                                                     options = list(`actions-box` = TRUE),
                                                     multiple = TRUE))),
                         tabPanel("Playlist-based",
-                                 pickerInput(inputId = "playlist_list",
-                                             label = "Playlists",
-                                             choices = NULL,
-                                             selected = NULL,
-                                             options = list(`actions-box` = TRUE),
-                                             multiple = TRUE)
+                                 uiOutput("playlist_based_ui")
                         ),
                         width = NULL, side = "left"
                     )),

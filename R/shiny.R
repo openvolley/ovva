@@ -11,6 +11,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
     assert_that(is.flag(launch_browser), !is.na(launch_browser))
     assert_that(is.data.frame(playlist_handler))
     if (!all(c("skill", "specific", "fun") %in% names(playlist_handler))) stop("playlist_handler must have columns 'skill', 'specific', and 'fun'")
+    if (any(duplicated(playlist_handler$specific))) stop("playlist_handler cannot have duplicated values of 'specific'")
     if (!is.list(playlist_handler$fun) || !is.function(playlist_handler$fun[[1]])) {
         stop("the 'fun' column of playlist_handler should be a list column of functions")
     }

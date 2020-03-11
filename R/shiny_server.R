@@ -1,10 +1,9 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         ## helper function: get the right function from the playlist handler for a given skill and specific
-        fun_from_playlist <- function(skill, specific) {
-            idx <- which(app_data$playlist_handler$skill %eq% skill & app_data$playlist_handler$specific %eq% specific)
-            if (length(idx) != 1) stop("cannot find playlist handler entry with skill '", skill, "' and specific '", specific, "'")
-            app_data$playlist_handler$fun[[idx]]
+        funs_from_playlist <- function(specific) {
+            ## return a list of functions
+            app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
         }
 
         ## play-by-play data for selected season
@@ -98,8 +97,24 @@ ovva_shiny_server <- function(app_data) {
         playlist_list = reactive({
             app_data$playlist_handler$specific[app_data$playlist$skill %in% input$skill_list]
         })
-        observe({
-            updatePickerInput(session, "playlist_list", choices = playlist_list(), selected = NULL)
+        output$playlist_based_ui <- renderUI({
+            if (length(playlist_list()) < 1) {
+                if (length(skill_list()) < 1) {
+                    tags$div(class = "alert alert-info", "Choose a skill first")
+                } else {
+                    tags$div(class = "alert alert-info", "No playlists have been defined for the chosen skill")
+                }
+            } else {
+                ## populate playlist_list options, keeping any existing selections
+                isolate(sel <- input$playlist_list)
+                if (!is.null(sel)) sel <- intersect(sel, playlist_list())
+                pickerInput(inputId = "playlist_list",
+                            label = "Playlists",
+                            choices = playlist_list(),
+                            selected = sel,
+                            options = list(`actions-box` = TRUE),
+                            multiple = TRUE)
+            }
         })
 
         ## Skilltype
@@ -110,7 +125,7 @@ ovva_shiny_server <- function(app_data) {
         observe({
             updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = skilltype_list())
         })
-        
+
         ## Phase
         phase_list = reactive({
             tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list,
@@ -220,16 +235,15 @@ ovva_shiny_server <- function(app_data) {
                 filterB_value_select <- input$adFilterBValue_list
                 playlist_select <- input$playlist_list
                 if(!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
-                    myfun <- fun_from_playlist(skill_select, playlist_select)
+                    myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
-                        ##pbp_tmp <- app_data$playlist_handler(x = pbp %>% dplyr::filter(game_id %in% game_select),
-                        ##                                     team = team_select, player = player_select, skill = skill_select, specific = playlist_select)
-                        pbp_tmp <- myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)
+                        ## apply each of myfuns in turn and rbind the results
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
                         ##pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
                         ##                                                                                                             team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
                         pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
-                        pbp_tmp <- bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else {
                     pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list,
@@ -273,14 +287,14 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
-                    myfun <- fun_from_playlist(skill_select, playlist_select)
+                    myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
-                        event_list <- myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)
+                        event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
                         ##event_list <- pbp %>% dplyr::filter(game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
                         ##                                                                                                                team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
                         event_list <- dplyr::filter(pbp, .data$game_id %in% game_select)
-                        event_list <- bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))
+                        event_list <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else {
                     event_list <- dplyr::filter(pbp, .data$player_name %in% player_select,
