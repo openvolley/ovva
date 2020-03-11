@@ -67,28 +67,33 @@ ovva_shiny_server <- function(app_data) {
 
         ## Augment pbp with additional covariates
         pbp_augment <- reactive({
-            req(pbp())
-            preprocess_data(pbp())
+            if (is.null(pbp())) NULL else preprocess_data(pbp())
         })
         ## Game ID
         game_id_list = reactive({
-            req(pbp_augment())
-            unique(na.omit(pbp_augment()$game_id))
+            if (is.null(pbp_augment())) NULL else unique(na.omit(pbp_augment()$game_id))
         })
         observe({
             updateSelectInput(session, "choose_game_id", choices = game_id_list())
         })
         ## take chosen game_id from DT
         selected_game_id <- reactive({
-            req(input$game_id_table_rows_selected)
-            game_table_data()$game_id[input$game_id_table_rows_selected]
+            if (is.null(input$game_id_table_rows_selected) || is.null(game_table_data())) {
+                NULL
+            } else {
+                game_table_data()$game_id[input$game_id_table_rows_selected]
+            }
         })
 
 
         ## Team
         team_list = reactive({
-            tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
-            unique(na.omit(tmp$team))
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
+                unique(na.omit(tmp$team))
+            }
         })
         observe({
             updateSelectInput(session, "team_list", choices = team_list())
@@ -96,8 +101,12 @@ ovva_shiny_server <- function(app_data) {
 
         ## Player ID
         player_list = reactive({
-            tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
-            unique(na.omit(tmp$player_name))
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
+                unique(na.omit(tmp$player_name))
+            }
         })
         observe({
             updatePickerInput(session, "player_list", choices = player_list())
@@ -105,8 +114,12 @@ ovva_shiny_server <- function(app_data) {
 
         ## Skill
         skill_list = reactive({
-            tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
-            unique(na.omit(tmp$skill))
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
+                unique(na.omit(tmp$skill))
+            }
         })
         observe({
             updateSelectInput(session, "skill_list", choices = skill_list())
@@ -138,8 +151,12 @@ ovva_shiny_server <- function(app_data) {
 
         ## Skilltype
         skilltype_list = reactive({
-            tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
-            unique(tmp$skilltype)
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
+                unique(tmp$skilltype)
+            }
         })
         observe({
             updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = skilltype_list())
@@ -147,9 +164,12 @@ ovva_shiny_server <- function(app_data) {
 
         ## Phase
         phase_list = reactive({
-            tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list,
-                          .data$skill %in% input$skill_list)
-            unique(tmp$phase)
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                unique(tmp$phase)
+            }
         })
         observe({
             updatePickerInput(session, "phase_list", choices = phase_list(), selected = phase_list())
@@ -157,13 +177,16 @@ ovva_shiny_server <- function(app_data) {
 
         ## Advanced filter
         adFilter_list = reactive({
-            colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list,
-                          .data$skill %in% input$skill_list))
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list))
+            }
         })
         observe({
             updateSelectInput(session, "adFilter_list", choices = adFilter_list())
         })
-        
+
         ## Advanced filter value
         adFilterValue_list = reactive({
             col_to_select <- input$adFilter_list
@@ -181,9 +204,11 @@ ovva_shiny_server <- function(app_data) {
 
         ## Advanced filter 2
         adFilterB_list = reactive({
-            req(pbp_augment())
-            colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list,
-                          .data$skill %in% input$skill_list))
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list))
+            }
         })
         observe({
             updateSelectInput(session, "adFilterB_list", choices = adFilterB_list())
@@ -215,10 +240,12 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID Table
         game_table_data <- reactive({
-            pbp <- pbp_augment()
-            req(pbp)
-            ## Customize pbp
-            dplyr::select(distinct(pbp, .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+            if (is.null(pbp_augment())) {
+                NULL
+            } else {
+                ## Customize pbp
+                dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+            }
         })
         output$game_id_table <- DT::renderDataTable({
             DT::datatable(game_table_data(),
@@ -238,11 +265,11 @@ ovva_shiny_server <- function(app_data) {
 
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
         recap_dt <- reactive({
-            pbp <- pbp_augment()
             ## Customize pbp
-            if (is.null(selected_game_id())) {
+            if (is.null(pbp_augment()) || is.null(selected_game_id())) {
                 NULL
             } else {
+                pbp <- pbp_augment()
                 meta <- meta()
                 game_select <- selected_game_id()
                 team_select <- input$team_list
@@ -304,7 +331,7 @@ ovva_shiny_server <- function(app_data) {
             filterB_value_select <- input$adFilterBValue_list
             playlist_select <- input$playlist_list
             ## Customize pbp
-            if (is.null(game_select)) {
+            if (is.null(pbp) || is.null(meta) || is.null(game_select)) {
                 NULL
             } else {
                 if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
@@ -404,6 +431,7 @@ ovva_shiny_server <- function(app_data) {
         ## video stuff
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         observe({
+            cat("pl: "); cat(str(playlist()))
             if (!is.null(playlist())) {
                 ## when playlist() changes, push it through to the javascript playlist
                 if (video_player_type() == "local") {
@@ -413,7 +441,7 @@ ovva_shiny_server <- function(app_data) {
                     shinyjs::hide("dv_player")
                     shinyjs::show("dvyt_player")
                 }
-                shinyjs::runjs("dvjs_video_stop();")
+                ov_video_control("stop")
                 shinyjs::runjs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
             }
         })
@@ -431,7 +459,7 @@ ovva_shiny_server <- function(app_data) {
             ##}
         })
         observeEvent(input$playback_rate, {
-            if (!is.null(input$playback_rate)) shinyjs::runjs(paste0("dvjs_set_playback_rate(", input$playback_rate, ");"))
+            if (!is.null(input$playback_rate)) ov_video_control("set_playback_rate", input$playback_rate)
         })
 
         output$chart_ui <- renderUI(app_data$chart_renderer)
