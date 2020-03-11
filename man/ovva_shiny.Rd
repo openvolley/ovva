@@ -13,11 +13,11 @@ ovva_shiny(
 )
 }
 \arguments{
-\item{data_path}{character: a named character vector of paths to data files. The names will be used as the competition names. So e.g. \code{c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")}}
+\item{data_path}{character or function: a named character vector of paths to data files. The names will be used as the competition names. So e.g. \code{c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")}. If \code{data_path} is a function, it should return such a character vector}
 
 \item{playlist_handler}{tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_playlist_handler}} for details)}
 
-\item{video_server}{string or function: if string, either "lighttpd" or "servr". If a function, it will be used to modify the video file path present in each dvw file. Details TBD}
+\item{video_server}{string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD}
 
 \item{launch_browser}{logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)}
 

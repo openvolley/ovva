@@ -23,6 +23,7 @@ ovva_shiny_server <- function(app_data) {
         ## play-by-play data for selected season
         pbp <- reactive({
             if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
+                showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
                     ## use alldata.rds if available
                     mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
@@ -32,9 +33,11 @@ ovva_shiny_server <- function(app_data) {
                 }
                 mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
                 mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
-                                               "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
-                mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
+                                                        "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
+                mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
                                                   TRUE ~ .data$game_id))
+                removeModal()
+                mydat
             } else {
                 NULL
             }
@@ -46,14 +49,17 @@ ovva_shiny_server <- function(app_data) {
                 metas
             }
             if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
+                showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
                     tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
-                    check_duplicates(lapply(tmp, function(z) z$meta))
+                    out <- check_duplicates(lapply(tmp, function(z) z$meta))
                 } else {
                     myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                    check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
+                    out <- check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
                 }
+                removeModal()
+                out
             } else {
                 NULL
             }
