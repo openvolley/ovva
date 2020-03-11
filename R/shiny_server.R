@@ -431,7 +431,6 @@ ovva_shiny_server <- function(app_data) {
         ## video stuff
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         observe({
-            cat("pl: "); cat(str(playlist()))
             if (!is.null(playlist())) {
                 ## when playlist() changes, push it through to the javascript playlist
                 if (video_player_type() == "local") {
@@ -443,6 +442,8 @@ ovva_shiny_server <- function(app_data) {
                 }
                 ov_video_control("stop")
                 shinyjs::runjs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
+            } else {
+                ov_video_control("stop") ## empty playlist, so stop the video
             }
         })
         output$player_controls_ui <- renderUI({
