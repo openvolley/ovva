@@ -10,7 +10,7 @@
 #' @importFrom htmltools tagList tags
 #' @importFrom methods as
 #' @importFrom rintrojs introBox introjsUI
-#' @importFrom shiny actionButton column fluidPage fluidRow mainPanel observe observeEvent onSessionEnded onStop plotOutput reactive renderUI renderPlot selectInput selectizeInput sidebarLayout sidebarPanel sliderInput tabPanel updateSelectInput uiOutput
+#' @importFrom shiny actionButton column fluidPage fluidRow mainPanel observe observeEvent onSessionEnded onStop plotOutput reactive renderUI req renderPlot selectInput selectizeInput sidebarLayout sidebarPanel sliderInput tabPanel updateSelectInput uiOutput
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom shinydashboard tabBox
 #' @importFrom shinyjs useShinyjs

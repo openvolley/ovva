@@ -15,7 +15,7 @@ ovva_shiny_ui <- function(app_data) {
         sidebarLayout(
             sidebarPanel(
                 introBox(selectInput("season", label = tags$h4("Competition directory"),
-                                     choices = names(app_data$data_path)),
+                                     choices = NULL),
                          data.step = 1,
                          data.intro = "Select volleyball season"),
                 introBox(DT::dataTableOutput("game_id_table"),

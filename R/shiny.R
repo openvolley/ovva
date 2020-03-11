@@ -1,6 +1,6 @@
 #' Launch the Shiny app
 #'
-#' @param data_path character: a named character vector of paths to data files. The names will be used as the competition names. So e.g. `c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")`
+#' @param data_path character or function: a named character vector of paths to data files. The names will be used as the competition names. So e.g. `c("Competition 1" = "/path/to/dvw/files", "Competition 2" = "/path/to/other/dvw/files")`. If `data_path` is a function, it should return such a character vector
 #' @param playlist_handler tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_playlist_handler}} for details)
 #' @param video_server string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD
 #' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)
@@ -18,10 +18,15 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
     assert_that(is.string(video_server) || is.function(video_server))
     if (is.string(video_server)) video_server <- match.arg(tolower(video_server), c("lighttpd", "servr", "none"))
     ## check competition data
-    assert_that(is.character(data_path), length(data_path) > 0)
-    if (length(names(data_path)) != length(data_path)) stop("data_path must be a named character vector")
-    for (z in seq_along(data_path)) {
-        if (!dir.exists(data_path[z])) stop("the directory '", data_path[z], "' does not exist")
+    if (is.function(data_path)) {
+        chk <- path()
+        if (!is.character(chk)) stop("the data_path function should return a named character vector")
+    } else {
+        assert_that(is.character(data_path), length(data_path) > 0)
+        if (length(names(data_path)) != length(data_path)) stop("data_path must be a named character vector or function that returns one")
+        for (z in seq_along(data_path)) {
+            if (!dir.exists(data_path[z])) stop("the directory '", data_path[z], "' does not exist")
+        }
     }
     ## sort out the video server
     if (is.function(video_server) || (is.string(video_server) && video_server == "none")) {

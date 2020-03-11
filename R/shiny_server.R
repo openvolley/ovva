@@ -6,14 +6,28 @@ ovva_shiny_server <- function(app_data) {
             app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
         }
 
+        get_data_paths <- reactive({
+            if (is.function(app_data$data_path)) {
+                app_data$data_path()
+            } else {
+                app_data$data_path
+            }
+        })
+        ## update the season choices
+        observe({
+            chc <- names(get_data_paths())
+            isolate(sel <- input$season)
+            if (!sel %in% chc) sel <- chc[1]
+            updateSelectInput(session, "season", choices = chc, selected = sel)
+        })
         ## play-by-play data for selected season
         pbp <- reactive({
-            if (!is.null(input$season) && input$season %in% names(app_data$data_path)) {
-                if (file.exists(file.path(app_data$data_path[[input$season]], "alldata.rds"))) {
+            if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
+                if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
                     ## use alldata.rds if available
-                    mydat <- readRDS(file.path(app_data$data_path[[input$season]], "alldata.rds"))
+                    mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
                 } else {
-                    myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
                     mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
                 }
                 mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
@@ -31,13 +45,13 @@ ovva_shiny_server <- function(app_data) {
                 if (any(duplicated(lapply(metas, function(z) z$match_id)))) stop("duplicate match_ids")
                 metas
             }
-            if (!is.null(input$season) && input$season %in% names(app_data$data_path)) {
-                if (file.exists(file.path(app_data$data_path[[input$season]], "allmeta.rds"))) {
+            if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
+                if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
-                    tmp <- readRDS(file.path(app_data$data_path[[input$season]], "allmeta.rds"))
+                    tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
                     check_duplicates(lapply(tmp, function(z) z$meta))
                 } else {
-                    myfiles <- dir(app_data$data_path[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
                     check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
                 }
             } else {
@@ -46,11 +60,13 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Augment pbp with additional covariates
-        pbp_augment <- reactive({ 
+        pbp_augment <- reactive({
+            req(pbp())
             preprocess_data(pbp())
         })
         ## Game ID
         game_id_list = reactive({
+            req(pbp_augment())
             unique(na.omit(pbp_augment()$game_id))
         })
         observe({
@@ -58,11 +74,8 @@ ovva_shiny_server <- function(app_data) {
         })
         ## take chosen game_id from DT
         selected_game_id <- reactive({
-            if (is.null(input$game_id_table_rows_selected)) {
-                NULL
-            } else {
-                game_table_data()$game_id[input$game_id_table_rows_selected]
-            }
+            req(input$game_id_table_rows_selected)
+            game_table_data()$game_id[input$game_id_table_rows_selected]
         })
 
 
@@ -162,6 +175,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Advanced filter 2
         adFilterB_list = reactive({
+            req(pbp_augment())
             colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list,
                           .data$skill %in% input$skill_list))
         })
@@ -196,8 +210,9 @@ ovva_shiny_server <- function(app_data) {
         ## Game ID Table
         game_table_data <- reactive({
             pbp <- pbp_augment()
+            req(pbp)
             ## Customize pbp
-            pbp_game_id <- dplyr::select(distinct(pbp, .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+            dplyr::select(distinct(pbp, .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
         })
         output$game_id_table <- DT::renderDataTable({
             DT::datatable(game_table_data(),
