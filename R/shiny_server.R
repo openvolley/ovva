@@ -56,7 +56,7 @@ ovva_shiny_server <- function(app_data) {
                     out <- check_duplicates(lapply(tmp, function(z) z$meta))
                 } else {
                     myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                    out <- check_duplicates(lapply(myfiles, function(z) read_dv(z)$meta))
+                    out <- check_duplicates(lapply(myfiles, function(z) read_dv(z, metadata_only = TRUE)$meta))
                 }
                 removeModal()
                 out
