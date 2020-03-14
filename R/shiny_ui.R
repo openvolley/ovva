@@ -8,10 +8,14 @@ ovva_shiny_ui <- function(app_data) {
                  tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;}"),
                  if (!is.null(app_data$css)) tags$style(app_data$css)
              ),
-        if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr"))
-            tags$script("function dvjs_video_onstart() { document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }"),
+        tags$script("function dvjs_video_onstart() { document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }"),
         if (!is.null(app_data$ui_header)) app_data$ui_header else tags$h2("Volleyball Video Analysis"),
         tags$hr(),
+        ovva_shiny_ui_main(),
+    )
+}
+
+ovva_shiny_ui_main <- function() {
         sidebarLayout(
             sidebarPanel(
                 introBox(selectInput("season", label = tags$h4("Competition directory"),
@@ -50,36 +54,6 @@ ovva_shiny_ui <- function(app_data) {
                                   data.intro = "Choose skill"))
                 ),
                 tags$h5("Optional"),
-                # fluidRow(
-                #     column(6,
-                #            introBox(
-                #                pickerInput(inputId = "skilltype_list",
-                #                            label = "Skill type",
-                #                            choices = NULL,
-                #                            selected = NULL,
-                #                            options = list(`actions-box` = TRUE),
-                #                            multiple = TRUE),
-                #                data.step = 5,
-                #                data.intro = "Choose skill type"), 
-                #            introBox(
-                #                pickerInput(inputId = "phase_list",
-                #                            label = "Phase",
-                #                            choices = NULL,
-                #                            selected = NULL,
-                #                            options = list(`actions-box` = TRUE),
-                #                            multiple = TRUE),
-                #                data.step = 5,
-                #                data.intro = "Choose phase")),
-                #     column(6, 
-                #            introBox(
-                #                pickerInput(inputId = "playlist_list",
-                #                            label = "Playlists",
-                #                            choices = NULL,
-                #                            selected = NULL,
-                #                            options = list(`actions-box` = TRUE),
-                #                            multiple = TRUE),
-                #                data.step = 5,
-                #                data.intro = "Choose playlist"))),
                 fluidRow(
                     tabBox(
                         tabPanel("Filter-based",
@@ -153,5 +127,4 @@ ovva_shiny_ui <- function(app_data) {
                        width = NULL, side = "left")
             )
         )
-    )
 }
