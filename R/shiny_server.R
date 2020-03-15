@@ -143,7 +143,8 @@ ovva_shiny_server <- function(app_data) {
 
         ## Pre-defined playlist
         playlist_list = reactive({
-            app_data$playlist_handler$specific[app_data$playlist$skill %in% input$skill_list]
+            tryCatch(app_data$playlist_handler$specific[app_data$playlist_handler$skill %in% input$skill_list],
+                     error = function(e) dplyr::tibble(skill = character(), specific = character(), fun = list()))
         })
         output$playlist_based_ui <- renderUI({
             if (length(playlist_list()) < 1) {
@@ -409,8 +410,6 @@ ovva_shiny_server <- function(app_data) {
                     if (length(game_select) == 1) {
                         event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
-                        ##event_list <- pbp %>% dplyr::filter(game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
-                        ##                                                                                                                team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
                         event_list <- dplyr::filter(pbp, .data$game_id %in% game_select)
                         event_list <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))))
                     }
@@ -439,26 +438,6 @@ ovva_shiny_server <- function(app_data) {
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% match_select)
 
                 if (nrow(meta_video) < 1) return(NULL)
-                ##if (app_data$video_serve_method == "shiny") {
-                ##    ## we are serving the video through the shiny server, so need to make symlinks in the www directory
-                ##    vf <- fs::path_norm(meta_video$file)
-                ##    if (is.null(vf) || length(vf) < 1) return(NULL)
-                ##    ## may have multiple video files at this point
-                ##    for (thisf in vf) {
-                ##        if (fs::file_exists(thisf)) {
-                ##            symlink_abspath <- fs::path_abs(file.path("www", basename(meta_video$file))) ## TODO check that this works when deployed
-                ##            suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
-                ##            thisf <- gsub(" ", "\\\\ " , thisf) ## this may not work on Windows
-                ##            system2("ln", c("-s", thisf, "www/"))
-                ##            onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
-                ##            onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
-                ##        } else {
-                ##            ## video file does not exist!
-                ##            stop("video file ", thisf, " does not exist, not handled yet")
-                ##        }
-                ##    }
-                ##    meta_video$video_src <- basename(meta_video$file)
-                ##} else
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
                     vf <- fs::path_norm(meta_video$file)
