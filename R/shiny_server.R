@@ -140,7 +140,7 @@ ovva_shiny_server <- function(app_data) {
         ## Pre-defined playlist
         playlist_list = reactive({
             tryCatch(app_data$playlist_handler$specific[app_data$playlist_handler$skill %in% input$skill_list],
-                     error = function(e) dplyr::tibble(skill = character(), specific = character(), fun = list())
+                     error = function(e) dplyr::tibble(skill = character(), specific = character(), fun = list()))
         })
         output$playlist_based_ui <- renderUI({
             if (length(playlist_list()) < 1) {
