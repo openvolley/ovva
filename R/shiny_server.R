@@ -21,28 +21,8 @@ ovva_shiny_server <- function(app_data) {
             updateSelectInput(session, "season", choices = chc, selected = sel)
         })
         ## play-by-play data for selected season
-        pbp <- reactive({
-            if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
-                showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
-                if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
-                    ## use alldata.rds if available
-                    mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
-                } else {
-                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                    mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
-                }
-                mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
-                mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
-                                                        "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
-                mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
-                                                  TRUE ~ .data$game_id))
-                removeModal()
-                mydat
-            } else {
-                NULL
-            }
-        })
-        ## metadata for selected season matches
+        pbp <- reactiveVal(NULL)
+        ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             check_duplicates <- function(metas) {
                 if (any(duplicated(lapply(metas, function(z) z$match_id)))) stop("duplicate match_ids")
@@ -58,9 +38,35 @@ ovva_shiny_server <- function(app_data) {
                     myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
                     out <- check_duplicates(lapply(myfiles, function(z) read_dv(z, metadata_only = TRUE)$meta))
                 }
+                ## out is a list of metadata objects
+                ## prune out any that don't have video
+                out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
+                if (length(out) < 1) {
+                    pbp(NULL)
+                    out <- NULL
+                } else {
+                    ## now process pbp()
+                    my_match_ids <- as.character(lapply(out, function(z) z$match_id))
+                    showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                    if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
+                        ## use alldata.rds if available
+                        mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
+                    } else {
+                        myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                        mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                    }
+                    mydat <- mydat[mydat$match_id %in% my_match_ids, ]
+                    mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
+                    mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
+                                                            "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
+                    mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
+                                                               TRUE ~ .data$game_id))
+                    pbp(mydat)
+                }
                 removeModal()
                 out
             } else {
+                pbp(NULL)
                 NULL
             }
         })
@@ -228,7 +234,7 @@ ovva_shiny_server <- function(app_data) {
         observe({
             updatePickerInput(session, "adFilterBValue_list", choices = adFilterBValue_list(), selected = adFilterBValue_list())
         })
-        
+
         ## Help
         observeEvent(input$help,
                      rintrojs::introjs(session, options = list("nextLabel"="Next",
@@ -241,8 +247,10 @@ ovva_shiny_server <- function(app_data) {
         ## Game ID Table
         game_table_data <- reactive({
             if (is.null(pbp_augment())) {
+                output$no_game_data <- if (!is.null(meta()) && is.null(pbp())) renderUI(tags$div(class = "alert alert-danger", "No matches with video could be found")) else NULL
                 NULL
             } else {
+                output$no_game_data <- renderUI(NULL)
                 ## Customize pbp
                 dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
             }
