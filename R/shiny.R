@@ -19,8 +19,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
     if (is.string(video_server)) video_server <- match.arg(tolower(video_server), c("lighttpd", "servr", "none"))
     ## check competition data
     if (is.function(data_path)) {
-        chk <- path()
-        if (!is.character(chk)) stop("the data_path function should return a named character vector")
+        if (!is.character(data_path())) stop("the data_path function should return a named character vector")
     } else {
         assert_that(is.character(data_path), length(data_path) > 0)
         if (length(names(data_path)) != length(data_path)) stop("data_path must be a named character vector or function that returns one")
