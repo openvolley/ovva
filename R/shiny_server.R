@@ -1,6 +1,7 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         ## helper function: get the right function from the playlist handler for a given skill and specific
+        have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {
             ## return a list of functions
             app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
@@ -22,27 +23,32 @@ ovva_shiny_server <- function(app_data) {
         })
         ## play-by-play data for selected season
         pbp <- reactiveVal(NULL)
+        pbp_augment <- reactiveVal(NULL)
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
-            check_duplicates <- function(metas) {
-                if (any(duplicated(lapply(metas, function(z) z$match_id)))) stop("duplicate match_ids")
-                metas
-            }
             if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
                 showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
                     tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
-                    out <- check_duplicates(lapply(tmp, function(z) z$meta))
+                    out <- lapply(tmp, function(z) z$meta)
                 } else {
                     myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                    out <- check_duplicates(lapply(myfiles, function(z) read_dv(z, metadata_only = TRUE)$meta))
+                    out <- lapply(myfiles, function(z) read_dv(z, metadata_only = TRUE)$meta)
+                }
+                ## check for duplicate match IDs - these could have different video files, which is too much hassle to handle
+                if (any(duplicated(lapply(out, function(z) z$match_id)))) {
+                    output$processing_note <- renderUI(tags$div(class = "alert alert-danger", "There are duplicate match IDs"))
+                    out <- NULL
+                } else {
+                    output$processing_note <- renderUI(NULL)
                 }
                 ## out is a list of metadata objects
                 ## prune out any that don't have video
-                out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
+                if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
                 if (length(out) < 1) {
                     pbp(NULL)
+                    pbp_augment(NULL)
                     out <- NULL
                 } else {
                     ## now process pbp()
@@ -62,19 +68,19 @@ ovva_shiny_server <- function(app_data) {
                     mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
                                                                TRUE ~ .data$game_id))
                     pbp(mydat)
+                    ## Augment pbp with additional covariates
+                    pbp_augment(preprocess_data(mydat))
                 }
                 removeModal()
+                have_done_startup(TRUE)
                 out
             } else {
                 pbp(NULL)
+                pbp_augment(NULL)
                 NULL
             }
         })
 
-        ## Augment pbp with additional covariates
-        pbp_augment <- reactive({
-            if (is.null(pbp())) NULL else preprocess_data(pbp())
-        })
         ## Game ID
         game_id_list = reactive({
             if (is.null(pbp_augment())) NULL else unique(na.omit(pbp_augment()$game_id))
@@ -248,10 +254,12 @@ ovva_shiny_server <- function(app_data) {
         game_table_data <- reactive({
             if (is.null(pbp_augment())) {
                 output$no_game_data <- renderUI(
-                    if (!is.null(meta()) && is.null(pbp())) {
-                        tags$div(class = "alert alert-danger", "No matches with video could be found")
-                    } else if (is.null(meta())) {
+                    if (is.null(input$season)) {
                         tags$div(class = "alert alert-info", "No competition data sets. Log in?")
+                    } else if (!is.null(meta()) && is.null(pbp())) {
+                        tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                    } else if (is.null(meta()) && have_done_startup()) {
+                        tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
                     } else {
                         NULL
                     })
