@@ -22,6 +22,7 @@ ovva_shiny_ui_main <- function() {
                                      choices = NULL),
                          data.step = 1,
                          data.intro = "Select volleyball season"),
+                uiOutput("no_game_data"),
                 introBox(DT::dataTableOutput("game_id_table"),
                          data.step = 2,
                          data.intro = "Search for the Game ID"
