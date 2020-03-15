@@ -74,6 +74,9 @@ ovva_shiny_ui_main <- function() {
                         tabPanel("Playlist-based",
                                  uiOutput("playlist_based_ui")
                         ),
+                        tabPanel("Highlights",
+                                 uiOutput("highlight_based_ui")
+                        ),
                         width = NULL, side = "left"
                     )),
                 tags$div(style = "border: 1px dashed black; padding: 8px;",
@@ -117,12 +120,13 @@ ovva_shiny_ui_main <- function() {
                          tabPanel("Video",
                                   tagList(ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, style = "border: 1px solid black; width: 90%;"),
                                           ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
-                                          uiOutput("player_controls_ui")), ##uiOutput("player_ui"),
+                                          uiOutput("player_controls_ui"),
+                                          shiny::downloadButton("create_clip_ui", "Download clip")), ##uiOutput("player_ui"),
                                   ##uiOutput("preview_button_ui", inline = TRUE),
                                   ##uiOutput("open_preview_ui", inline = TRUE),
                                   sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)),
                          width = NULL, side = "left"),
-                tabBox(title = "", tabPanel("Summary table",DT::dataTableOutput("official_recap")),
+                introBox(title = "", tabPanel("Summary of clip",DT::dataTableOutput("official_recap")),
                        uiOutput("chart_ui"),
                        width = NULL, side = "left")
             )

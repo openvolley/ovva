@@ -5,6 +5,10 @@ ovva_shiny_server <- function(app_data) {
             ## return a list of functions
             app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
         }
+        funs_from_highlight<- function(specific) {
+            ## return a list of functions
+            app_data$highlight_handler$fun[which(app_data$highlight_handler$specific %in% specific)]
+        }
 
         get_data_paths <- reactive({
             if (is.function(app_data$data_path)) {
@@ -149,6 +153,26 @@ ovva_shiny_server <- function(app_data) {
             }
         })
 
+        ## Highlights
+        highlight_list = reactive({
+            app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"]
+        })
+        output$highlight_based_ui <- renderUI({
+                if (length(game_id_list()) < 1) {
+                    tags$div(class = "alert alert-info", "Choose a game first")
+                } else {
+                ## populate highlight_list options, keeping any existing selections
+                shiny::isolate(sel <- input$highlight_list)
+                if (!is.null(sel)) sel <- intersect(sel, highlight_list())
+                pickerInput(inputId = "highlight_list",
+                            label = "Highlights",
+                            choices = highlight_list(),
+                            selected = sel,
+                            options = list(`actions-box` = TRUE),
+                            multiple = TRUE)
+            }
+        })
+
         ## Skilltype
         skilltype_list = reactive({
             if (is.null(pbp_augment())) {
@@ -282,7 +306,9 @@ ovva_shiny_server <- function(app_data) {
                 filterB_var <- input$adFilterB_list
                 filterB_value_select <- input$adFilterBValue_list
                 playlist_select <- input$playlist_list
-                if(!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
+                highlight_select <- input$highlight_list
+
+                if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
                     myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
                         ## apply each of myfuns in turn and rbind the results
@@ -290,6 +316,16 @@ ovva_shiny_server <- function(app_data) {
                     } else{
                         ##pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
                         ##                                                                                                             team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
+                        pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
+                    }
+                } else if (!is.null(highlight_select) & !is.null(game_select)) {
+                    myfuns <- funs_from_highlight(highlight_select)
+                    if (length(game_select) == 1) {
+
+                        ## apply each of myfuns in turn and rbind the results
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
+                    } else{
                         pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
@@ -303,13 +339,23 @@ ovva_shiny_server <- function(app_data) {
                                              .data[[filter_var]] %in% filter_value_select,
                                              .data[[filterB_var]] %in% filterB_value_select)
                 }
-                pbp_game_id <- dplyr::summarize(group_by(pbp_tmp, .data$game_id, .data$evaluation_code), N = n())
-                DT::datatable(pbp_game_id,
-                              extensions = "Scroller",
-                              filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
-                              rownames = FALSE,
-                              colnames = c("Game ID", "Evaluation", "N")
-                              )
+                if (!is.null(highlight_select) & !is.null(game_select)) {
+                    pbp_game_id <- dplyr::summarize(group_by(pbp_tmp, .data$game_id, .data$point_id), N = n())
+                    DT::datatable(pbp_game_id,
+                                  extensions = "Scroller",
+                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
+                                  rownames = FALSE,
+                                  colnames = c("Game ID", "Point ID", "N"))
+
+                } else {
+                    pbp_game_id <- dplyr::summarize(group_by(pbp_tmp, .data$game_id, .data$evaluation_code), N = n())
+                    DT::datatable(pbp_game_id,
+                                  extensions = "Scroller",
+                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
+                                  rownames = FALSE,
+                                  colnames = c("Game ID", "Evaluation", "N")
+                                  )
+                }
             }
         })
         output$official_recap <- DT::renderDataTable({
@@ -330,12 +376,23 @@ ovva_shiny_server <- function(app_data) {
             filterB_var <- input$adFilterB_list
             filterB_value_select <- input$adFilterBValue_list
             playlist_select <- input$playlist_list
+            highlight_select <- input$highlight_list
             ## Customize pbp
             if (is.null(pbp) || is.null(meta) || is.null(game_select)) {
                 NULL
             } else {
                 if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
                     myfuns <- funs_from_playlist(playlist_select)
+                    if (length(game_select) == 1) {
+                        event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
+                    } else{
+                        ##event_list <- pbp %>% dplyr::filter(game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
+                        ##                                                                                                                team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
+                        event_list <- dplyr::filter(pbp, .data$game_id %in% game_select)
+                        event_list <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))))
+                    }
+                } else if (!is.null(highlight_select) & !is.null(game_select)) {
+                    myfuns <- funs_from_highlight(highlight_select)
                     if (length(game_select) == 1) {
                         event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
@@ -424,7 +481,11 @@ ovva_shiny_server <- function(app_data) {
                        }
                 ## TODO also check for mixed sources, which we can't handle yet
                 video_player_type(vpt)
-                ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                if (!is.null(highlight_select)) {
+                    ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
+                } else {
+                    ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                }
             }
         })
 
@@ -459,6 +520,35 @@ ovva_shiny_server <- function(app_data) {
                          tags$span(id = "subtitleskill", "Skill"))
             ##}
         })
+
+        output$create_clip_ui <- shiny::downloadHandler(
+            filename = function() {
+                #filename <- tempfile(fileext = ".mp4")
+                filename <- paste0("Highlights",selected_game_id(),".mp4")
+            },
+            content = function(file) {
+                filename <- tempfile(fileext = ".mp4")
+                chk <- sys::exec_internal("ffmpeg", "-version")
+                tempfiles <- future.apply::future_lapply(seq_len(nrow(playlist())), function(ri) {
+                    outfile <- tempfile(fileext = paste0(".", fs::path_ext(playlist()$video_src[ri])))
+                    if (file.exists(outfile)) unlink(outfile)
+                    infile <-list.files(path = "/tmp/", pattern = basename(playlist()$video_src[ri]), recursive = TRUE, full.names = TRUE)
+                    res <- sys::exec_internal("ffmpeg", c("-ss", playlist()$start_time[ri], "-i", infile, "-strict", "-2", "-t", playlist()$duration[ri], outfile))
+                    if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
+                    outfile
+                })
+                tempfiles <- unlist(tempfiles)
+                cfile <- tempfile(fileext = ".txt")
+                on.exit(unlink(c(cfile, tempfiles)))
+                cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
+                if (file.exists(filename)) unlink(filename)
+                res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
+                if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
+                file.copy(filename, file)
+            },
+            contentType = "video/mp4"
+        )
+
         observeEvent(input$playback_rate, {
             if (!is.null(input$playback_rate)) ov_video_control("set_playback_rate", input$playback_rate)
         })
