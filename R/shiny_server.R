@@ -271,7 +271,14 @@ ovva_shiny_server <- function(app_data) {
         ## Game ID Table
         game_table_data <- reactive({
             if (is.null(pbp_augment())) {
-                output$no_game_data <- if (!is.null(meta()) && is.null(pbp())) renderUI(tags$div(class = "alert alert-danger", "No matches with video could be found")) else NULL
+                output$no_game_data <- renderUI(
+                    if (!is.null(meta()) && is.null(pbp())) {
+                        tags$div(class = "alert alert-danger", "No matches with video could be found")
+                    } else if (is.null(meta())) {
+                        tags$div(class = "alert alert-info", "No competition data sets. Log in?")
+                    } else {
+                        NULL
+                    })
                 NULL
             } else {
                 output$no_game_data <- renderUI(NULL)
