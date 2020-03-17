@@ -29,9 +29,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), vi
     }
     ## sort out the video server
     if (is.function(video_server) || (is.string(video_server) && video_server == "none")) {
-        video_server_url <- NULL
-        video_server_dir <- NULL
-        video_serve_method <- video_server
+        vsrv <- list(method = video_server, url = NULL, dir = NULL)
     } else {
         vsrv <- ovva_video_server(method = video_server)
         onStop(function() try({ vsrv$cleanup_fun() }, silent = TRUE))
