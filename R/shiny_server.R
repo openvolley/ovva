@@ -55,6 +55,13 @@ ovva_shiny_server <- function(app_data) {
                     pbp_augment(NULL)
                     out <- NULL
                 } else {
+                    ## for each video file, check if it exists and try and find it if not
+                    for (z in seq_along(out)) {
+                        try({
+                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file)
+                            out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                        })
+                    }
                     ## now process pbp()
                     my_match_ids <- as.character(lapply(out, function(z) z$match_id))
                     showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
@@ -434,9 +441,8 @@ ovva_shiny_server <- function(app_data) {
                                                 .data[[filterB_var]] %in% filterB_value_select)
                 }
                 match_select <- unique(na.omit(event_list$match_id))
-                meta_video <- bind_rows(lapply(meta, function(z) mutate(z$video, match_id = z$match_id)))
+                meta_video <- bind_rows(lapply(meta, function(z) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% match_select)
-
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
@@ -465,13 +471,24 @@ ovva_shiny_server <- function(app_data) {
                 ##} else if (app_data$video_serve_method == "standalone") {
                     ##    meta_video$video_src <- meta_video$file ## full (local) path
                 } else if (is.function(app_data$video_serve_method)) {
-                    meta_video$video_src <- vapply(meta_video$file, app_data$video_serve_method, FUN.VALUE = "", USE.NAMES = FALSE)
+                    if (nrow(meta_video) > 0) {
+                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
+                    } else {
+                        meta_video$video_src <- character()
+                    }
                 } else if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("none")) {
                     ## do nothing except pass the video file info into video_src
                     meta_video$video_src <- meta_video$file
                 } else {
                     stop("unrecognized video_serve_method: ", app_data$video_serve_method)
                 }
+                output$video_dialog <- renderUI({
+                    if (any(is.na(meta_video$video_src) | !nzchar(meta_video$video_src))) {
+                        tags$div(class = "alert alert-danger", "At least one video could not be found.")
+                    } else {
+                        NULL
+                    }
+                })
                 event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                                        .data$skill == "Attack" ~ .data$attack_description),
                                      subtitle = paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team),
@@ -484,10 +501,13 @@ ovva_shiny_server <- function(app_data) {
                 ## TODO also check for mixed sources, which we can't handle yet
                 video_player_type(vpt)
                 if (!is.null(highlight_select)) {
-                    ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
+                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
                 } else {
-                    ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
                 }
+                ## also keep track of actual file paths
+                pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
+                pl
             }
         })
 
