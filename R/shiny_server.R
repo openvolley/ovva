@@ -543,30 +543,46 @@ ovva_shiny_server <- function(app_data) {
             ##}
         })
 
-        output$create_clip_ui <- shiny::downloadHandler(
+        clip_filename <- reactiveVal("")
+        observeEvent(input$create_clip_button, {
+            ov_video_control("stop")
+            showModal(modalDialog(title = "Create and download video clip", size = "l",
+                                  "Please wait, creating clip. This could take some time."))
+            ## TODO - add progress indicator to that somehow
+            ## do the video crunching
+            filename <- tempfile(fileext = ".mp4")
+            chk <- sys::exec_internal("ffmpeg", "-version")
+            future::plan("multisession")
+            pll <- lapply(seq_len(nrow(playlist())), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
+            tempfiles <- future.apply::future_lapply(pll, function(plitem) {
+            ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
+                outfile <- tempfile(fileext = paste0(".", fs::path_ext(plitem$file)))
+                if (file.exists(outfile)) unlink(outfile)
+                infile <- plitem$file
+                res <- sys::exec_internal("ffmpeg", c("-ss", plitem$start_time, "-i", infile, "-strict", "-2", "-t", plitem$duration, outfile))
+                if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
+                outfile
+            })
+            tempfiles <- unlist(tempfiles)
+            cfile <- tempfile(fileext = ".txt")
+            on.exit(unlink(c(cfile, tempfiles)))
+            cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
+            if (file.exists(filename)) unlink(filename)
+            res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
+            if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
+            clip_filename(filename)
+            removeModal()
+            showModal(modalDialog(title = "Create and download video clip", size = "l",
+                                  shiny::downloadButton("download_clip")))
+        })
+
+        output$download_clip <- shiny::downloadHandler(
             filename = function() {
-                #filename <- tempfile(fileext = ".mp4")
-                filename <- paste0("Highlights",selected_game_id(),".mp4")
+                filename <- paste0("Highlights", selected_game_id(), ".mp4")
             },
             content = function(file) {
-                filename <- tempfile(fileext = ".mp4")
-                chk <- sys::exec_internal("ffmpeg", "-version")
-                tempfiles <- future.apply::future_lapply(seq_len(nrow(playlist())), function(ri) {
-                    outfile <- tempfile(fileext = paste0(".", fs::path_ext(playlist()$video_src[ri])))
-                    if (file.exists(outfile)) unlink(outfile)
-                    infile <-list.files(path = "/tmp/", pattern = basename(playlist()$video_src[ri]), recursive = TRUE, full.names = TRUE)
-                    res <- sys::exec_internal("ffmpeg", c("-ss", playlist()$start_time[ri], "-i", infile, "-strict", "-2", "-t", playlist()$duration[ri], outfile))
-                    if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
-                    outfile
-                })
-                tempfiles <- unlist(tempfiles)
-                cfile <- tempfile(fileext = ".txt")
-                on.exit(unlink(c(cfile, tempfiles)))
-                cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
-                if (file.exists(filename)) unlink(filename)
-                res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
-                if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
-                file.copy(filename, file)
+                removeModal()
+                file.copy(clip_filename(), file)
             },
             contentType = "video/mp4"
         )
