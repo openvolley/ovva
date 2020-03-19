@@ -51,6 +51,13 @@ ovva_shiny_server <- function(app_data) {
                     pbp_augment(NULL)
                     out <- NULL
                 } else {
+                    ## for each video file, check if it exists and try and find it if not
+                    for (z in seq_along(out)) {
+                        try({
+                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file)
+                            out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                        })
+                    }
                     ## now process pbp()
                     my_match_ids <- as.character(lapply(out, function(z) z$match_id))
                     showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
@@ -436,7 +443,10 @@ ovva_shiny_server <- function(app_data) {
                        }
                 ## TODO also check for mixed sources, which we can't handle yet
                 video_player_type(vpt)
-                ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                ## also keep track of actual file paths
+                pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
+                pl
             }
         })
 
