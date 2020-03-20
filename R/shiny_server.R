@@ -544,38 +544,55 @@ ovva_shiny_server <- function(app_data) {
         })
 
         clip_filename <- reactiveVal("")
+        clip_status <- reactiveVal(NULL)
+        output$create_clip_button_ui <- renderUI({
+            if (is.null(playlist())) {
+                NULL
+            } else {
+                actionButton("create_clip_button", "Download clip")
+            }
+        })
         observeEvent(input$create_clip_button, {
             ov_video_control("stop")
-            showModal(modalDialog(title = "Create and download video clip", size = "l",
-                                  "Please wait, creating clip. This could take some time."))
-            ## TODO - add progress indicator to that somehow
+            showModal(modalDialog(title = "Create and download video clip", size = "l", "Please wait, creating clip. This could take some time.", uiOutput("clip_status_ui")))
+            ## TODO - add progress indicator to that somehow? may not be possible with parallel
             ## do the video crunching
+            clip_status(NULL)
             filename <- tempfile(fileext = ".mp4")
-            chk <- sys::exec_internal("ffmpeg", "-version")
-            future::plan("multisession")
-            pll <- lapply(seq_len(nrow(playlist())), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
-            tempfiles <- future.apply::future_lapply(pll, function(plitem) {
-            ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
-                outfile <- tempfile(fileext = paste0(".", fs::path_ext(plitem$file)))
-                if (file.exists(outfile)) unlink(outfile)
-                infile <- plitem$file
-                res <- sys::exec_internal("ffmpeg", c("-ss", plitem$start_time, "-i", infile, "-strict", "-2", "-t", plitem$duration, outfile))
-                if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
-                outfile
+            tryCatch({
+                chk <- sys::exec_internal("ffmpeg", "-version")
+                future::plan("multisession")
+                pll <- lapply(seq_len(nrow(playlist())), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
+                tempfiles <- future.apply::future_lapply(pll, function(plitem) {
+                    ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
+                    outfile <- tempfile(fileext = paste0(".", fs::path_ext(plitem$file)))
+                    if (file.exists(outfile)) unlink(outfile)
+                    infile <- plitem$file
+                    res <- sys::exec_internal("ffmpeg", c("-ss", plitem$start_time, "-i", infile, "-strict", "-2", "-t", plitem$duration, outfile))
+                    if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
+                    outfile
+                })
+                tempfiles <- unlist(tempfiles)
+                cfile <- tempfile(fileext = ".txt")
+                on.exit(unlink(c(cfile, tempfiles)))
+                cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
+                if (file.exists(filename)) unlink(filename)
+                res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
+                if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
+                clip_filename(filename)
+                removeModal()
+                showModal(modalDialog(title = "Create and download video clip", size = "l", shiny::downloadButton("download_clip")))
+            }, error = function(e) {
+                clip_status(conditionMessage(e))
             })
-            tempfiles <- unlist(tempfiles)
-            cfile <- tempfile(fileext = ".txt")
-            on.exit(unlink(c(cfile, tempfiles)))
-            cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
-            if (file.exists(filename)) unlink(filename)
-            res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
-            if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
-            clip_filename(filename)
-            removeModal()
-            showModal(modalDialog(title = "Create and download video clip", size = "l",
-                                  shiny::downloadButton("download_clip")))
         })
-
+        output$clip_status_ui <- renderUI({
+            if (is.null(clip_status())) {
+                NULL
+            } else {
+                tags$div(class = "alert alert-danger", "Sorry, something went wrong. The error message was: ", clip_status())
+            }
+        })
         output$download_clip <- shiny::downloadHandler(
             filename = function() {
                 filename <- paste0("Highlights", selected_game_id(), ".mp4")

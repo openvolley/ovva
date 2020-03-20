@@ -80,52 +80,40 @@ ovva_highlight_handler <- function() {
     ## now add the corresponding code for each one
     out$fun <- list(rep(NULL, nrow(out)))
     out$fun[[which(out$skill == "Highlights" & out$specific == "Game")]] <- function(x, team, player) {
-
         x_tmp <- dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code"))
         x_tmp <- tidyr::drop_na(x_tmp, .data$video_time)
-
         x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$point_id), WFP = sum(.data$whaouhfactorpoints, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
-
         x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
-
         x_tmp$cumsumDur <- cumsum(x_tmp$duration)
-
         pid_highlights <- sort(x_tmp$point_id[x_tmp$cumsumDur < 180 & x_tmp$cumsumDur > 0])
-
         x[x$point_id %in% pid_highlights & !is.na(x$video_time), ]
     }
     out$fun[[which(out$skill == "Highlights" & out$specific == "Team")]] <- function(x, team, player) {
-
-        x_tmp <- dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code"))
-        x_tmp$whaouhfactorpoints[x_tmp$team %eq% team] <- x_tmp$whaouhfactorpoints[x_tmp$team %eq% team]*2
-
-        x_tmp <- tidyr::drop_na(x_tmp, .data$video_time)
-
-        x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$point_id), WFP = sum(.data$whaouhfactorpoints, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
-
-        x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
-
-        x_tmp$cumsumDur <- cumsum(x_tmp$duration)
-
-        pid_highlights <- sort(x_tmp$point_id[x_tmp$cumsumDur < 180 & x_tmp$cumsumDur > 0])
-
+        if (missing(team) || is.null(team)) {
+            pid_highlights <- c()
+        } else {
+            x_tmp <- dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code"))
+            x_tmp$whaouhfactorpoints[x_tmp$team %eq% team] <- x_tmp$whaouhfactorpoints[x_tmp$team %eq% team]*2
+            x_tmp <- tidyr::drop_na(x_tmp, .data$video_time)
+            x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$point_id), WFP = sum(.data$whaouhfactorpoints, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
+            x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
+            x_tmp$cumsumDur <- cumsum(x_tmp$duration)
+            pid_highlights <- sort(x_tmp$point_id[x_tmp$cumsumDur < 180 & x_tmp$cumsumDur > 0])
+        }
         x[x$point_id %in% pid_highlights & !is.na(x$video_time),]
     }
     out$fun[[which(out$skill == "Highlights" & out$specific == "Player")]] <- function(x, team,  player) {
-
-        x_tmp <- dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code"))
-        x_tmp$whaouhfactorpoints[x_tmp$player_name %eq% player] <- x_tmp$whaouhfactorpoints[x_tmp$player_name %eq% player]*2
-
-        x_tmp <- tidyr::drop_na(x_tmp, .data$video_time)
-
-        x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$point_id), WFP = sum(.data$whaouhfactorpoints, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
-
-        x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
-
-        x_tmp$cumsumDur <- cumsum(x_tmp$duration)
-
-        pid_highlights <- sort(x_tmp$point_id[x_tmp$cumsumDur < 180 & x_tmp$cumsumDur > 0])
-
+        if (missing(player) || is.null(player)) {
+            pid_highlights <- c()
+        } else {
+            x_tmp <- dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code"))
+            x_tmp$whaouhfactorpoints[x_tmp$player_name %eq% player] <- x_tmp$whaouhfactorpoints[x_tmp$player_name %eq% player]*2
+            x_tmp <- tidyr::drop_na(x_tmp, .data$video_time)
+            x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$point_id), WFP = sum(.data$whaouhfactorpoints, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
+            x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
+            x_tmp$cumsumDur <- cumsum(x_tmp$duration)
+            pid_highlights <- sort(x_tmp$point_id[x_tmp$cumsumDur < 180 & x_tmp$cumsumDur > 0])
+        }
         x[x$point_id %in% pid_highlights & !is.na(x$video_time),]
     }
     out
