@@ -435,10 +435,10 @@ ovva_shiny_server <- function(app_data) {
                                                 .data$skill %in% skill_select,
                                                 .data$game_id %in% game_select,
                                                 .data$team %in% team_select,
-                                                .data$phase %in% phase_select,
-                                                .data$skilltype %in% skilltype_select,
                                                 .data[[filter_var]] %in% filter_value_select,
                                                 .data[[filterB_var]] %in% filterB_value_select)
+                    if (!is.null(phase_select)) event_list <- dplyr::filter(event_list, .data$phase %in% phase_select)
+                    if (!is.null(skilltype_select)) event_list <- dplyr::filter(event_list, .data$skilltype %in% skilltype_select)
                 }
                 match_select <- unique(na.omit(event_list$match_id))
                 meta_video <- bind_rows(lapply(meta, function(z) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
