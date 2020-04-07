@@ -75,3 +75,5 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL) {
         NA_character_
     }
 }
+
+js_str_nospecials <- function(z) gsub("['\"\\]+", "", z)

@@ -321,7 +321,7 @@ ovva_shiny_server <- function(app_data) {
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
         recap_dt <- reactive({
             ## Customize pbp
-            if (is.null(pbp_augment()) || is.null(selected_game_id())) {
+            if (is.null(pbp_augment()) || is.null(selected_game_id()) || is.null(meta())) {
                 NULL
             } else {
                 pbp <- pbp_augment()
@@ -441,7 +441,7 @@ ovva_shiny_server <- function(app_data) {
                     if (!is.null(skilltype_select)) event_list <- dplyr::filter(event_list, .data$skilltype %in% skilltype_select)
                 }
                 match_select <- unique(na.omit(event_list$match_id))
-                meta_video <- bind_rows(lapply(meta, function(z) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
+                meta_video <- bind_rows(lapply(meta, function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% match_select)
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
@@ -491,8 +491,8 @@ ovva_shiny_server <- function(app_data) {
                 })
                 event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                                        .data$skill == "Attack" ~ .data$attack_description),
-                                     subtitle = paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team),
-                                     subtitleskill = paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code))
+                                     subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
+                                     subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
                 vpt <- if (all(is_youtube_id(meta_video$video_src))) {
                            "youtube"
                        } else {
