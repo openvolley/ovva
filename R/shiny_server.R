@@ -48,20 +48,28 @@ ovva_shiny_server <- function(app_data) {
                     output$processing_note <- renderUI(NULL)
                 }
                 ## out is a list of metadata objects
-                ## prune out any that don't have video
+                ## try and resolve a path for each video file
+                ## may need to do something different for videos defined in dvw files as URLs
+                for (z in seq_along(out)) {
+                    try({
+                        if (is.null(out[[z]]$video) || nrow(out[[z]]$video) < 1) {
+                            ## no video defined in the dvw file but we might find it anyway
+                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = NULL)
+                            if (!is.na(temp)) out[[z]]$video <- dplyr::tibble(camera = "Camera0", file = temp)
+                        } else {
+                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file)
+                            out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                        }
+                    })
+                }
+                ## prune out any files that don't have video
                 if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
                 if (length(out) < 1) {
+                    ## TODO more meaningful warning to user that we don't have any video available
                     pbp(NULL)
                     pbp_augment(NULL)
                     out <- NULL
                 } else {
-                    ## for each video file, check if it exists and try and find it if not
-                    for (z in seq_along(out)) {
-                        try({
-                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file)
-                            out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
-                        })
-                    }
                     ## now process pbp()
                     my_match_ids <- as.character(lapply(out, function(z) z$match_id))
                     showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
