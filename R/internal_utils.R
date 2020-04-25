@@ -77,3 +77,10 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL) {
 }
 
 js_str_nospecials <- function(z) gsub("['\"\\]+", "", z)
+
+evaljs <- function(expr) {
+    shiny::getDefaultReactiveDomain()$sendCustomMessage("evaljs", expr)
+}
+
+js_show <- function(id) evaljs(paste0("var el=$('#", id, "'); if (el.hasClass('shiny-bound-input')) { el.closest('.shiny-input-container').show(); } else { el.show(); }"))
+js_hide <- function(id) evaljs(paste0("var el=$('#", id, "'); if (el.hasClass('shiny-bound-input')) { el.closest('.shiny-input-container').hide(); } else { el.hide(); }"))

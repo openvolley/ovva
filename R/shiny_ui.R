@@ -2,7 +2,6 @@ ovva_shiny_ui <- function(app_data) {
     fluidPage(
         introjsUI(),
         ovideo::ov_video_js(youtube = TRUE),
-        useShinyjs(),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
                  tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;}"),

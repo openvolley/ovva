@@ -521,14 +521,14 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(playlist())) {
                 ## when playlist() changes, push it through to the javascript playlist
                 if (video_player_type() == "local") {
-                    shinyjs::hide("dvyt_player")
-                    shinyjs::show("dv_player")
+                    js_hide("dvyt_player")
+                    js_show("dv_player")
                 } else {
-                    shinyjs::hide("dv_player")
-                    shinyjs::show("dvyt_player")
+                    js_hide("dv_player")
+                    js_show("dvyt_player")
                 }
                 ov_video_control("stop")
-                shinyjs::runjs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
+                evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
             } else {
                 ov_video_control("stop") ## empty playlist, so stop the video
             }
