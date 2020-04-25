@@ -84,3 +84,8 @@ evaljs <- function(expr) {
 
 js_show <- function(id) evaljs(paste0("var el=$('#", id, "'); if (el.hasClass('shiny-bound-input')) { el.closest('.shiny-input-container').show(); } else { el.show(); }"))
 js_hide <- function(id) evaljs(paste0("var el=$('#", id, "'); if (el.hasClass('shiny-bound-input')) { el.closest('.shiny-input-container').hide(); } else { el.hide(); }"))
+
+
+introbox_or_div <- function(...) {
+    if (requireNamespace("rintrojs", quietly = TRUE)) rintrojs::introBox(...) else tags$div(...)
+}
