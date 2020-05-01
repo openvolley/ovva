@@ -28,6 +28,7 @@ ovva_shiny_server <- function(app_data) {
         ## play-by-play data for selected season
         pbp <- reactiveVal(NULL)
         pbp_augment <- reactiveVal(NULL)
+        got_no_video <- reactiveVal(FALSE)
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
@@ -54,7 +55,7 @@ ovva_shiny_server <- function(app_data) {
                 ## prune out any that don't have video
                 if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
                 if (length(out) < 1) {
-                    ## TODO more meaningful warning to user that we don't have any video available
+                    got_no_video(TRUE)
                     pbp(NULL)
                     pbp_augment(NULL)
                     out <- NULL
@@ -62,34 +63,50 @@ ovva_shiny_server <- function(app_data) {
                     ## for each video file, check if it exists and try and find it if not
                     for (z in seq_along(out)) {
                         try({
-                            temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file)
-                            out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                            if (isTRUE(app_data$video_subtree_only)) {
+                                out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file, subtree_only = TRUE, alt_path = app_data$alt_video_path)
+                            } else {
+                                temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file, subtree_only = FALSE, alt_path = app_data$alt_video_path)
+                                out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                            }
                         })
                     }
-                    ## now process pbp()
-                    my_match_ids <- as.character(lapply(out, function(z) z$match_id))
-                    showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
-                    if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
-                        ## use alldata.rds if available
-                        mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
+                    ## remove any files with no associated video
+                    out <- Filter(Negate(is.null), lapply(out, function(z) if (nrow(z$video) == 1 && !is.na(z$video$file) && nzchar(z$video$file)) z))
+                    if (length(out) < 1) {
+                        ## no files with video
+                        got_no_video(TRUE)
+                        pbp(NULL)
+                        pbp_augment(NULL)
+                        out <- NULL
                     } else {
-                        myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                        mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                        got_no_video(FALSE)
+                        ## now process pbp()
+                        my_match_ids <- as.character(lapply(out, function(z) z$match_id))
+                        showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                        if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
+                            ## use alldata.rds if available
+                            mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
+                        } else {
+                            myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
+                            mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                        }
+                        mydat <- mydat[mydat$match_id %in% my_match_ids, ]
+                        mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
+                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
+                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
+                        mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
+                                                                   TRUE ~ .data$game_id))
+                        pbp(mydat)
+                        ## Augment pbp with additional covariates
+                        pbp_augment(preprocess_data(mydat))
                     }
-                    mydat <- mydat[mydat$match_id %in% my_match_ids, ]
-                    mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
-                    mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
-                                                            "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
-                    mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
-                                                               TRUE ~ .data$game_id))
-                    pbp(mydat)
-                    ## Augment pbp with additional covariates
-                    pbp_augment(preprocess_data(mydat))
                 }
                 removeModal()
                 have_done_startup(TRUE)
                 out
             } else {
+                got_no_video(FALSE)
                 pbp(NULL)
                 pbp_augment(NULL)
                 NULL
@@ -295,7 +312,11 @@ ovva_shiny_server <- function(app_data) {
                     } else if (!is.null(meta()) && is.null(pbp())) {
                         tags$div(class = "alert alert-danger", "No matches with video could be found.")
                     } else if (is.null(meta()) && have_done_startup()) {
-                        tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
+                        if (isTRUE(isolate(got_no_video()))) {
+                            tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                        } else {
+                            tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
+                        }
                     } else {
                         NULL
                     })
@@ -488,29 +509,36 @@ ovva_shiny_server <- function(app_data) {
                 }
                 output$video_dialog <- renderUI({
                     if (any(is.na(meta_video$video_src) | !nzchar(meta_video$video_src))) {
+                        tags$div(class = "alert alert-danger", "No video files for these match(es) could be found.")
+                    } else if (any(is.na(meta_video$video_src) | !nzchar(meta_video$video_src))) {
                         tags$div(class = "alert alert-danger", "At least one video could not be found.")
                     } else {
                         NULL
                     }
                 })
-                event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
-                                                                       .data$skill == "Attack" ~ .data$attack_description),
-                                     subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
-                                     subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
-                vpt <- if (all(is_youtube_id(meta_video$video_src))) {
-                           "youtube"
-                       } else {
-                           "local"
-                       }
-                ## TODO also check for mixed sources, which we can't handle yet
-                video_player_type(vpt)
-                if (!is.null(highlight_select)) {
-                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
+                meta_video <- meta_video[!is.na(meta_video$video_src) & nzchar(meta_video$video_src), ]
+                if (nrow(meta_video) < 1) {
+                    pl <- NULL
                 } else {
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                    event_list <- mutate(event_list, skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
+                                                                           .data$skill == "Attack" ~ .data$attack_description),
+                                         subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
+                                         subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
+                    vpt <- if (all(is_youtube_id(meta_video$video_src))) {
+                               "youtube"
+                           } else {
+                               "local"
+                           }
+                    ## TODO also check for mixed sources, which we can't handle yet
+                    video_player_type(vpt)
+                    if (!is.null(highlight_select)) {
+                        pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
+                    } else {
+                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                    }
+                    ## also keep track of actual file paths
+                    pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
                 }
-                ## also keep track of actual file paths
-                pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
                 pl
             }
         })

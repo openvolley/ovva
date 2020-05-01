@@ -49,28 +49,40 @@ is_youtube_id <- function(z) nchar(z) == 11 & grepl("^[[:alnum:]_\\-]+$", z)
 
 ## internal function to try and locate a video file, when the path embedded in the dvw file is for another computer
 ## dvw_filename should be full path to file
-find_video_in_subtree <- function(dvw_filename, video_filename = NULL) {
+find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE) {
     stopifnot(length(dvw_filename) == 1) ## single dvw file, but can handle multiple video files
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
         if (nrow(video_filename) > 0) {
-            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file))
+            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file, , alt_path = alt_path, subtree_only = subtree_only))
         } else {
             video_filename <- NA_character_
         }
     }
     if (length(video_filename) > 1) {
-        return(vapply(seq_len(nrow(video_filename)), function(z) find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file[z]), FUN.VALUE = "", USE.NAMES = FALSE))
+        return(vapply(seq_len(nrow(video_filename)), function(z) find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file[z], alt_path = alt_path, subtree_only = subtree_only), FUN.VALUE = "", USE.NAMES = FALSE))
     }
     if (length(video_filename) == 1 && !is.na(video_filename) && nzchar(video_filename)) {
-        if (fs::file_exists(video_filename)) return(video_filename) ## ok, the path in the dvw file is actually correct
+        if (fs::file_exists(video_filename) && !subtree_only) return(video_filename) ## ok, the path in the dvw file is actually correct, and we are allowing non-subtree paths
         ## otherwise let's go looking for it
         this_dir <- dirname(dvw_filename) ## actual file has to be under the same path
-        if (!fs::dir_exists(this_dir) && !fs::link_exists(this_dir)) return(NA_character_)
-        possible_paths <- c(this_dir, fs::dir_ls(this_dir, type = "dir", recurse = TRUE))
-        ff <- fs::path(possible_paths, basename(video_filename))
-        ff <- ff[fs::file_exists(ff)]
-        if (length(ff) ==1) ff else NA_character_
+        out <- NA_character_
+        if (!fs::dir_exists(this_dir) && !fs::link_exists(this_dir)) {
+            ## do nothing yet, maybe try the alt path below
+        } else {
+            possible_paths <- c(this_dir, fs::dir_ls(this_dir, type = "dir", recurse = TRUE))
+            ff <- fs::path(possible_paths, basename(video_filename))
+            ff <- ff[fs::file_exists(ff)]
+            if (length(ff) ==1) out <- ff
+        }
+        if (is.na(out) && !is.null(alt_path) && (fs::dir_exists(alt_path) || fs::link_exists(alt_path))) {
+            ## didn't find it under the subtree, try the alt path
+            possible_paths <- c(alt_path, fs::dir_ls(alt_path, type = "dir", recurse = TRUE))
+            ff <- fs::path(possible_paths, basename(video_filename))
+            ff <- ff[fs::file_exists(ff)]
+            if (length(ff) == 1) out <- ff
+        }
+        out
     } else {
         NA_character_
     }
