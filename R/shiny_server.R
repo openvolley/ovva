@@ -328,19 +328,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         output$game_id_table <- DT::renderDataTable({
-            DT::datatable(game_table_data(),
-                          extensions = "Scroller",
-                          filter = "top", options = list(
-                                              deferRender = TRUE,
-                                              scrollY = 200,
-                                              scroller = TRUE
-                                          ),
-                          rownames = FALSE,
-                          colnames = c("Game ID",
-                                       "Game date",
-                                       "Away",
-                                       "Home")
-                          )
+            DT::datatable(game_table_data(), extensions = "Scroller", filter = "top",
+                          options = list(sDom='<"top">t<"bottom">rlip', deferRender = TRUE, scrollY = 200, scroller = TRUE),
+                          rownames = FALSE, colnames = c("Game ID", "Game date", "Away", "Home"))
         })
 
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
@@ -417,6 +407,10 @@ ovva_shiny_server <- function(app_data) {
         output$official_recap <- DT::renderDataTable({
             recap_dt()
         })
+
+        #observeEvent(input$playlist_current_item, {
+        #    cat("current item: ", input$playlist_current_item, "\n")
+        #})
 
         playlist <-reactive({
             pbp <- pbp_augment()
