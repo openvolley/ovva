@@ -120,7 +120,7 @@ ovva_shiny_ui_main <- function() {
             tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
             tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
             tags$style("video.loading { background: black; }"),
-            tags$script("function dvjs_video_onstart() { console.log(dvjs_video_controller.queue[dvjs_video_controller.current].subtitle); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
+            tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playlist_current_item', dvjs_video_controller.current); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
         )
     )
 }
