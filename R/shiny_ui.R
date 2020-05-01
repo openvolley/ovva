@@ -5,8 +5,7 @@ ovva_shiny_ui <- function(app_data) {
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
                  tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;}"),
-                 if (!is.null(app_data$css)) tags$style(app_data$css),
-                 tags$script("function dvjs_video_onstart() { document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
+                 if (!is.null(app_data$css)) tags$style(app_data$css)
              ),
         if (!is.null(app_data$ui_header)) {
             app_data$ui_header
@@ -120,7 +119,8 @@ ovva_shiny_ui_main <- function() {
                             width = NULL, side = "left"),
             tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
             tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
-            tags$style("video.loading { background: black; }")
+            tags$style("video.loading { background: black; }"),
+            tags$script("function dvjs_video_onstart() { console.log(dvjs_video_controller.queue[dvjs_video_controller.current].subtitle); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
         )
     )
 }
