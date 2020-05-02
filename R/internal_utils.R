@@ -12,6 +12,14 @@ single_unique_or <- function(z, or = "[multiple values]") {
     if (length(tmp) == 1) tmp else if (length(tmp) > 1) or else as(NA, class(z))
 }
 
+names_first_to_capital <- function(x, fun) {
+    setNames(x, var2fc(if (missing(fun)) names(x) else vapply(names(x), fun, FUN.VALUE = "", USE.NAMES = FALSE)))
+}
+
+var2fc <- function(x) {
+    vapply(x, function(z) gsub("_", " ", paste0(toupper(substr(z, 1, 1)), substr(z, 2, nchar(z)))), FUN.VALUE = "", USE.NAMES = FALSE)
+}
+
 preprocess_data <- function(x) {
     if (!"end_cone" %in% names(x)) x$end_cone <- NA_integer_
     if (!"receiving_team" %in% names(x)) {

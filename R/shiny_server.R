@@ -1,5 +1,6 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
+        plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         ## helper function: get the right function from the playlist handler for a given skill and specific
         have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {
@@ -334,7 +335,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
-        recap_dt <- reactive({
+        playstable_data <- reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || is.null(selected_game_id()) || is.null(meta())) {
                 NULL
@@ -360,15 +361,12 @@ ovva_shiny_server <- function(app_data) {
                         ## apply each of myfuns in turn and rbind the results
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
-                        ##pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
-                        ##                                                                                                             team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
                         pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else if (!is.null(highlight_select) & !is.null(game_select)) {
                     myfuns <- funs_from_highlight(highlight_select)
                     if (length(game_select) == 1) {
-
                         ## apply each of myfuns in turn and rbind the results
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
                     } else{
@@ -385,32 +383,77 @@ ovva_shiny_server <- function(app_data) {
                                              .data[[filter_var]] %in% filter_value_select,
                                              .data[[filterB_var]] %in% filterB_value_select)
                 }
-                if (!is.null(highlight_select) & !is.null(game_select)) {
-                    pbp_game_id <- dplyr::summarize(group_by(pbp_tmp, .data$game_id, .data$point_id), N = n())
-                    DT::datatable(pbp_game_id,
-                                  extensions = "Scroller",
-                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
-                                  rownames = FALSE,
-                                  colnames = c("Game ID", "Point ID", "N"))
-
-                } else {
-                    pbp_game_id <- dplyr::summarize(group_by(pbp_tmp, .data$game_id, .data$evaluation_code), N = n())
-                    DT::datatable(pbp_game_id,
-                                  extensions = "Scroller",
-                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
-                                  rownames = FALSE,
-                                  colnames = c("Game ID", "Evaluation", "N")
-                                  )
-                }
+                pbp_tmp
             }
         })
-        output$official_recap <- DT::renderDataTable({
-            recap_dt()
-        })
+        ## this not needed if using playstable output instead of recap (summary)
+        ##        recap_dt <- reactive({
+        ##            if (is.null(playstable_data())) {
+        ##                NULL
+        ##            } else {
+        ##                game_select <- selected_game_id()
+        ##                if (!is.null(input$highlight_list) & !is.null(game_select)) {
+        ##                    pbp_game_id <- dplyr::summarize(group_by(playstable_data(), .data$game_id, .data$point_id), N = n())
+        ##                    DT::datatable(pbp_game_id,
+        ##                                  extensions = "Scroller",
+        ##                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
+        ##                                  rownames = FALSE,
+        ##                                  colnames = c("Game ID", "Point ID", "N"))
+        ##
+        ##                } else {
+        ##                    pbp_game_id <- dplyr::summarize(group_by(playstable_data(), .data$game_id, .data$evaluation_code), N = n())
+        ##                    DT::datatable(pbp_game_id,
+        ##                                  extensions = "Scroller",
+        ##                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
+        ##                                  rownames = FALSE,
+        ##                                  colnames = c("Game ID", "Evaluation", "N")
+        ##                                  )
+        ##                }
+        ##            }
+        ##        })
+        ##output$official_recap <- DT::renderDataTable({
+        ##    recap_dt()
+        ##})
 
-        #observeEvent(input$playlist_current_item, {
-        #    cat("current item: ", input$playlist_current_item, "\n")
-        #})
+        output$playstable <- DT::renderDataTable({
+            mydat <- recap_dt()
+            if (!is.null(mydat)) {
+                DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,##colnames = cnames,
+                              extensions = "Scroller", selection = "single", ##filter = "top",
+                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE))
+            } else {
+                NULL
+            }
+        })
+        playstable_proxy <- DT::dataTableProxy("playstable")
+        playstable_select_row <- function(rw) {
+            no_change <- isolate(!is.null(rw) && identical(rw, input$playstable_rows_selected))
+            if (!no_change && !is.null(rw)) {
+                DT::selectRows(playstable_proxy, rw)
+                scroll_playstable(rw)
+            }
+        }
+        scroll_playstable <- function(rw = NULL) {
+            selr <- if (!is.null(rw)) rw else input$playstable_rows_selected
+            if (!is.null(selr)) {
+                ## scrolling works on the VISIBLE row index, so it depends on any column filters that might have been applied
+                visible_rowidx <- which(input$playstable_rows_all == selr)
+                scrollto <- max(visible_rowidx-1-5, 0) ## -1 for zero indexing, -5 to keep the selected row 5 from the top
+                evaljs(paste0("$('#playstable').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
+            }
+        }
+        ## when player changes item, update the selected row in the playstable and play it
+        observeEvent(input$playstable_current_item, {
+            if (!is.null(input$playstable_current_item)) playstable_select_row(input$playstable_current_item+1)
+        })
+        ## when the user chooses a row in the playstable, play it
+        ## note that this will also be triggered by the DT::selectRows call in playstable_select_row
+        observeEvent(input$playstable_rows_selected, {
+            if (!is.null(input$playstable_rows_selected)){
+                evaljs(paste0("dvjs_video_controller.current=", input$playstable_rows_selected-1, "; dvjs_video_play();"))
+                ##playstable_select_row(input$playstable_rows_selected)
+            }
+        })
 
         playlist <-reactive({
             pbp <- pbp_augment()
@@ -565,7 +608,8 @@ ovva_shiny_server <- function(app_data) {
                          tags$button("Pause", onclick = "dvjs_video_pause();"),
                          tags$button("Back 1s", onclick = "dvjs_jog(-1);"),
                          tags$span(id = "subtitle", "Score"),
-                         tags$span(id = "subtitleskill", "Skill"))
+                         tags$span(id = "subtitleskill", "Skill"),
+                         uiOutput("create_clip_button_ui", inline = TRUE))
             ##}
         })
 

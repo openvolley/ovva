@@ -100,7 +100,9 @@ ovva_shiny_ui_main <- function() {
                                                                     options = list(`actions-box` = TRUE),
                                                                     multiple = TRUE),
                                                         data.step = 10, data.intro = "2nd Filter value")))
-                     )
+                     ),
+            tags$hr(),
+            sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)
         ),
         mainPanel(
             introbox_or_div(title = "Video",
@@ -108,19 +110,20 @@ ovva_shiny_ui_main <- function() {
                                      tagList(ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 90%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
                                              ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
                                              uiOutput("player_controls_ui"),
-                                             uiOutput("video_dialog"),
-                                             uiOutput("create_clip_button_ui")),
+                                             uiOutput("video_dialog")
+                                             )##,
                                      ##uiOutput("preview_button_ui", inline = TRUE),
                                      ##uiOutput("open_preview_ui", inline = TRUE),
-                                     sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)),
+                                     ),
                             width = NULL, side = "left"),
-            introbox_or_div(title = "", tabPanel("Summary of clip", DT::dataTableOutput("official_recap")),
+            introbox_or_div(title = "", tabPanel("Summary of clip", DT::dataTableOutput("playstable")),
+                                                 ##DT::dataTableOutput("official_recap")),
                             uiOutput("chart_ui"),
                             width = NULL, side = "left"),
             tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
             tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
             tags$style("video.loading { background: black; }"),
-            tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playlist_current_item', dvjs_video_controller.current); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
+            tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
         )
     )
 }
