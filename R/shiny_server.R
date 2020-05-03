@@ -416,7 +416,7 @@ ovva_shiny_server <- function(app_data) {
         ##})
 
         output$playstable <- DT::renderDataTable({
-            mydat <- recap_dt()
+            mydat <- playstable_data()
             if (!is.null(mydat)) {
                 DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,##colnames = cnames,
                               extensions = "Scroller", selection = "single", ##filter = "top",
