@@ -1,6 +1,24 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
+        adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
+            "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
+            "Attack code" = "attack_code", "Attack code description" = "attack_description",
+            "Setter call" = "set_code", "Setter call description" = "set_description", ##"set_type",
+            "Start zone" = "start_zone", "End zone" = "end_zone", #"End subzone" = "end_subzone",
+            "End cone" = "end_cone",
+            "Skill subtype" = "skill_subtype", "Number of players" = "num_players", ##"num_players_numeric",
+            "Special code" = "special_code",
+            "Home team score" = "home_team_score", "Visiting team score" = "visiting_team_score",
+            "Home team rotation (setter position)" = "home_setter_position", "Visiting team rotation (setter position)" = "visiting_setter_position",
+            "Custom code" = "custom_code",
+            ##"attack_phase", ## not really needed with phase already used
+            ##"start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
+            ##home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6",
+            ##"visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
+            "Set number" = "set_number", ##"team_touch_id",
+            "Home team" = "home_team", "Visiting team" = "visiting_team", "Point won by" = "point_won_by", "Serving team" = "serving_team", ##"game_date",
+            "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position")
         ## helper function: get the right function from the playlist handler for a given skill and specific
         have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {
@@ -246,7 +264,12 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment())) {
                 NULL
             } else {
-                colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list))
+                temp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                avail <- colnames(temp)
+                avail <- avail[vapply(avail, function(z) !all(is.na(temp[[z]])), FUN.VALUE = TRUE)] ## exclude all-NA cols
+                avail <- adfilter_cols_to_show[adfilter_cols_to_show %in% avail] ## only those in our pre-defined list of adfilter_cols_to_show
+                avail <- avail[order(names(avail))]
+                c(list("No filter" = ""), avail) ## add a "no filter" option
             }
         })
         observe({
@@ -256,6 +279,7 @@ ovva_shiny_server <- function(app_data) {
         ## Advanced filter value
         adFilterValue_list = reactive({
             col_to_select <- input$adFilter_list
+            if (is.null(col_to_select) || !nzchar(col_to_select)) return(NULL)
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
                 NULL
@@ -269,20 +293,14 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Advanced filter 2
-        adFilterB_list = reactive({
-            if (is.null(pbp_augment())) {
-                NULL
-            } else {
-                colnames(dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list))
-            }
-        })
         observe({
-            updateSelectInput(session, "adFilterB_list", choices = adFilterB_list())
+            updateSelectInput(session, "adFilterB_list", choices = adFilter_list())
         })
 
         ## Advanced filter 2 value
         adFilterBValue_list = reactive({
             col_to_select <- input$adFilterB_list
+            if (is.null(col_to_select) || !nzchar(col_to_select)) return(NULL)
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
                 NULL
@@ -379,9 +397,9 @@ ovva_shiny_server <- function(app_data) {
                                              .data$skilltype %in% input$skilltype_list,
                                              .data$team %in% input$team_list,
                                              .data$phase %in% input$phase_list,
-                                             .data$game_id %in% selected_game_id(),
-                                             .data[[filter_var]] %in% filter_value_select,
-                                             .data[[filterB_var]] %in% filterB_value_select)
+                                             .data$game_id %in% selected_game_id())
+                    if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% filter_value_select)
+                    if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% filterB_value_select)
                 }
                 pbp_tmp
             }
@@ -496,9 +514,9 @@ ovva_shiny_server <- function(app_data) {
                     event_list <- dplyr::filter(pbp, .data$player_name %in% player_select,
                                                 .data$skill %in% skill_select,
                                                 .data$game_id %in% game_select,
-                                                .data$team %in% team_select,
-                                                .data[[filter_var]] %in% filter_value_select,
-                                                .data[[filterB_var]] %in% filterB_value_select)
+                                                .data$team %in% team_select)
+                    if (!is.null(filter_var) && nzchar(filter_var)) event_list <- dplyr::filter(event_list, .data[[filter_var]] %in% filter_value_select)
+                    if (!is.null(filterB_var) && nzchar(filterB_var)) event_list <- dplyr::filter(event_list, .data[[filterB_var]] %in% filterB_value_select)
                     if (!is.null(phase_select)) event_list <- dplyr::filter(event_list, .data$phase %in% phase_select)
                     if (!is.null(skilltype_select)) event_list <- dplyr::filter(event_list, .data$skilltype %in% skilltype_select)
                 }
