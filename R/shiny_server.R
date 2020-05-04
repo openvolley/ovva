@@ -437,7 +437,7 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             if (!is.null(mydat)) {
                 DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,##colnames = cnames,
-                              extensions = "Scroller", selection = "single", ##filter = "top",
+                              extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"), ## "single", ##filter = "top",
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE))
             } else {
                 NULL
@@ -445,8 +445,10 @@ ovva_shiny_server <- function(app_data) {
         })
         playstable_proxy <- DT::dataTableProxy("playstable")
         playstable_select_row <- function(rw) {
-            no_change <- isolate(!is.null(rw) && identical(rw, input$playstable_rows_selected))
-            if (!no_change && !is.null(rw)) {
+## cat(str(rw))
+## cat(str(input$playstable_rows_selected))
+            if (!is.null(rw) && !is.na(rw) && (is.null(input$playstable_rows_selected) || is.na(input$playstable_rows_selected) || rw != input$playstable_rows_selected)) {
+## cat("changing\n")
                 DT::selectRows(playstable_proxy, rw)
                 scroll_playstable(rw)
             }
