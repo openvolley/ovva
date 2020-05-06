@@ -12,6 +12,7 @@ ovva_playlist_handler <- function() {
     out <- dplyr::tribble(~skill, ~specific,
                    "Attack", "Attacks against 0 or 1 blocker",
                    "Attack", "Hitting angles",
+                   "Attack", "Hitting lines",
                    "Attack", "Hitting off the block",
                    "Attack", "OH, OPP: Hitting back court hits",
                    "Attack", "Recycle",
@@ -37,6 +38,16 @@ ovva_playlist_handler <- function() {
             aidx <- aidx & ((x$start_zone %in% c(4, 7, 5) & x$end_zone %in% c(4, 7, 5)) | (x$start_zone %in% c(3, 8, 6) & x$end_zone %in% c(2, 9, 1, 4, 7, 5)) | (x$start_zone %in% c(2, 9, 1) & x$end_zone %in% c(2, 9, 1)))
         } else {
             aidx <- aidx & ((x$start_zone %in% c(4, 7, 5, 2, 9, 1) & x$end_cone %in% c(5, 6, 7)) | (x$start_zone %in% c(3, 8, 6) & x$end_cone %in% c(1, 2, 6, 7)))
+        }
+        x[aidx, ]
+    }
+    out$fun[[which(out$skill == "Attack" & out$specific == "Hitting lines")]] <- function(x, team, player) {
+        aidx <- x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack"
+        if (all(is.na(x$end_cone))) {
+            ## using zones
+            aidx <- aidx & ((x$start_zone %in% c(4, 7, 5) & x$end_zone %in% c(2, 9, 1)) | (x$start_zone %in% c(2, 9, 1) & x$end_zone %in% c(4, 7, 5)))
+        } else {
+            aidx <- aidx & x$start_zone %in% c(4, 7, 5, 2, 9, 1) & x$end_cone %in% c(1, 2)
         }
         x[aidx, ]
     }
