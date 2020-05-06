@@ -134,7 +134,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID
         game_id_list = reactive({
-            if (is.null(pbp_augment())) NULL else unique(na.omit(pbp_augment()$game_id))
+            if (is.null(pbp_augment())) NULL else sort(unique(na.omit(pbp_augment()$game_id)))
         })
         observe({
             updateSelectInput(session, "choose_game_id", choices = game_id_list())
@@ -155,7 +155,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
-                unique(na.omit(tmp$team))
+                sort(unique(na.omit(tmp$team)))
             }
         })
         observe({
@@ -168,7 +168,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
-                unique(na.omit(tmp$player_name))
+                sort(unique(na.omit(tmp$player_name)))
             }
         })
         observe({
@@ -181,7 +181,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
-                unique(na.omit(tmp$skill))
+                sort(unique(na.omit(tmp$skill)))
             }
         })
         observe({
@@ -239,7 +239,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
-                unique(tmp$skilltype)
+                sort(unique(tmp$skilltype))
             }
         })
         observe({
@@ -252,7 +252,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
-                unique(tmp$phase)
+                sort(unique(tmp$phase))
             }
         })
         observe({
@@ -285,7 +285,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
-                unique(tmp[[col_to_select]])
+                sort(unique(tmp[[col_to_select]]))
             }
         })
         observe({
@@ -306,7 +306,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
-                unique(tmp[[col_to_select]])
+                sort(unique(tmp[[col_to_select]]))
             }
         })
         observe({
