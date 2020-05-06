@@ -437,7 +437,7 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(mydat)) {
                 DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,##colnames = cnames,
                               extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"), ## "single", ##filter = "top",
-                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE))
+                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE)) ## no column sorting
             } else {
                 NULL
             }
