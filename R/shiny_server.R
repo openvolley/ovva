@@ -367,9 +367,7 @@ ovva_shiny_server <- function(app_data) {
                 skilltype_select <- input$skilltype_list
                 phase_select <- input$phase_list
                 filter_var <- input$adFilter_list
-                filter_value_select <- input$adFilterValue_list
                 filterB_var <- input$adFilterB_list
-                filterB_value_select <- input$adFilterBValue_list
                 playlist_select <- input$playlist_list
                 highlight_select <- input$highlight_list
 
@@ -394,13 +392,14 @@ ovva_shiny_server <- function(app_data) {
                 } else {
                     pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list,
                                              .data$skill %in% input$skill_list,
-                                             .data$skilltype %in% input$skilltype_list,
                                              .data$team %in% input$team_list,
-                                             .data$phase %in% input$phase_list,
                                              .data$game_id %in% selected_game_id())
-                    if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% filter_value_select)
-                    if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% filterB_value_select)
+                    if (!is.null(input$skilltype_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$skilltype %in% input$skilltype_list)
+                    if (!is.null(input$phase_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$phase %in% input$phase_list)
                 }
+                ## advanced filters apply to all
+                if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% input$adFilterValue_list)
+                if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% input$adFilterBValue_list)
                 pbp_tmp
             }
         })
@@ -475,53 +474,13 @@ ovva_shiny_server <- function(app_data) {
 
         playlist <-reactive({
             pbp <- pbp_augment()
-            meta <- meta()
-            game_select <- selected_game_id()
-            team_select <- input$team_list
-            player_select <- input$player_list
-            skill_select <- input$skill_list
-            skilltype_select <- input$skilltype_list
-            phase_select <- input$phase_list
-            filter_var <- input$adFilter_list
-            filter_value_select <- input$adFilterValue_list
-            filterB_var <- input$adFilterB_list
-            filterB_value_select <- input$adFilterBValue_list
-            playlist_select <- input$playlist_list
-            highlight_select <- input$highlight_list
             ## Customize pbp
-            if (is.null(pbp) || is.null(meta) || is.null(game_select)) {
+            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id())) {
                 NULL
             } else {
-                if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
-                    myfuns <- funs_from_playlist(playlist_select)
-                    if (length(game_select) == 1) {
-                        event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
-                    } else{
-                        event_list <- dplyr::filter(pbp, .data$game_id %in% game_select)
-                        event_list <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))))
-                    }
-                } else if (!is.null(highlight_select) & !is.null(game_select)) {
-                    myfuns <- funs_from_highlight(highlight_select)
-                    if (length(game_select) == 1) {
-                        event_list <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
-                    } else{
-                        ##event_list <- pbp %>% dplyr::filter(game_id %in% game_select) %>% split(.$match_id) %>% map_dfr(~app_data$playlist_handler(x = .,
-                        ##                                                                                                                team = team_select, player = player_select, skill = skill_select, specific = playlist_select))
-                        event_list <- dplyr::filter(pbp, .data$game_id %in% game_select)
-                        event_list <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(event_list, event_list$match_id), myfun, team = team_select, player = player_select))))
-                    }
-                } else {
-                    event_list <- dplyr::filter(pbp, .data$player_name %in% player_select,
-                                                .data$skill %in% skill_select,
-                                                .data$game_id %in% game_select,
-                                                .data$team %in% team_select)
-                    if (!is.null(filter_var) && nzchar(filter_var)) event_list <- dplyr::filter(event_list, .data[[filter_var]] %in% filter_value_select)
-                    if (!is.null(filterB_var) && nzchar(filterB_var)) event_list <- dplyr::filter(event_list, .data[[filterB_var]] %in% filterB_value_select)
-                    if (!is.null(phase_select)) event_list <- dplyr::filter(event_list, .data$phase %in% phase_select)
-                    if (!is.null(skilltype_select)) event_list <- dplyr::filter(event_list, .data$skilltype %in% skilltype_select)
-                }
+                event_list <-  playstable_data()
                 match_select <- unique(na.omit(event_list$match_id))
-                meta_video <- bind_rows(lapply(meta, function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
+                meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% match_select)
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
@@ -586,7 +545,7 @@ ovva_shiny_server <- function(app_data) {
                            }
                     ## TODO also check for mixed sources, which we can't handle yet
                     video_player_type(vpt)
-                    if (!is.null(highlight_select)) {
+                    if (!is.null(input$highlight_list)) {
                         pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
                     } else {
                         pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
