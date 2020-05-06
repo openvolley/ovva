@@ -10,22 +10,41 @@
 ovva_playlist_handler <- function() {
     ## start by defining the table of skills and specifics
     out <- dplyr::tribble(~skill, ~specific,
-                   "Attack", "Hitting off the block",
                    "Attack", "Attacks against 0 or 1 blocker",
+                   "Attack", "Hitting angles",
+                   "Attack", "Hitting off the block",
                    "Attack", "OH, OPP: Hitting back court hits",
+                   "Attack", "Recycle",
+                   "Block", "Triple block",
                    "Reception", "Reception after a bad pass",
                    "Dig", "Digs on hard driven balls"
                    )
     ## now add the corresponding code for each one
     out$fun <- list(rep(NULL, nrow(out)))
     out$fun[[which(out$skill == "Attack" & out$specific == "Hitting off the block")]] <- function(x, team, player) {
-        x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & lead(x$skill %eq% "Block") & lead(x$evaluation) %eq% "Error", ]
+        x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & lead(x$skill %eq% "Block") & lead(x$evaluation) %in% c("Error", "Positive, block touch", "Poor, opposition to replay"), ]
     }
     out$fun[[which(out$skill == "Attack" & out$specific == "Attacks against 0 or 1 blocker")]] <- function(x, team, player) {
         x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & x$num_players %in% c("No block", "1 player block"), ]
     }
     out$fun[[which(out$skill == "Attack" & out$specific == "OH, OPP: Hitting back court hits")]] <- function(x, team, player) {
         x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & x$start_zone %in% c(8,9), ]
+    }
+    out$fun[[which(out$skill == "Attack" & out$specific == "Hitting angles")]] <- function(x, team, player) {
+        aidx <- x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack"
+        if (all(is.na(x$end_cone))) {
+            ## using zones
+            aidx <- aidx & ((x$start_zone %in% c(4, 7, 5) & x$end_zone %in% c(4, 7, 5)) | (x$start_zone %in% c(3, 8, 6) & x$end_zone %in% c(2, 9, 1, 4, 7, 5)) | (x$start_zone %in% c(2, 9, 1) & x$end_zone %in% c(2, 9, 1)))
+        } else {
+            aidx <- aidx & ((x$start_zone %in% c(4, 7, 5, 2, 9, 1) & x$end_cone %in% c(5, 6, 7)) | (x$start_zone %in% c(3, 8, 6) & x$end_cone %in% c(1, 2, 6, 7)))
+        }
+        x[aidx, ]
+    }
+    out$fun[[which(out$skill == "Attack" & out$specific == "Recycle")]] <- function(x, team, player) {
+        x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & x$evaluation %eq% "Blocked for reattack", ]
+    }
+    out$fun[[which(out$skill == "Block" & out$specific == "Triple block")]] <- function(x, team, player) {
+        x[x$opposing_team %in% team & x$skill %eq% "Attack" & x$num_players %eq% "3 player block", ]
     }
     out$fun[[which(out$skill == "Reception" & out$specific == "Reception after a bad pass")]] <- function(x, team, player) {
         ## all receps for this player
