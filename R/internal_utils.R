@@ -42,6 +42,10 @@ preprocess_data <- function(x) {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
         x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lead(.data$match_id) %eq% .data$match_id & lead(.data$set_number) %eq% .data$set_number & !lead(.data$team) %eq% .data$team)
     }
+    ## separate freeballs into "Freeball dig" and "Freeball attack" (comment these lines out to disable this)
+    x <- mutate(x, skill = case_when(.data$skill %eq% "Freeball" & .data$freeball_over ~ "Freeball over",
+                                     .data$skill %eq% "Freeball" ~ "Freeball dig",
+                                     TRUE ~ .data$skill))
     x <- mutate(x, skilltype = case_when(.data$skill %in% c("Serve", "Reception") ~ .data$skill_type,
                                          .data$skill == "Attack" ~ .data$attack_description,
                                          .data$skill == "Set" ~ .data$set_code))

@@ -88,7 +88,17 @@ ovva_highlight_handler <- function() {
                            "Freeball", "#", -2,
                            "Freeball", "+", -2,
                            "Freeball", "-", -2,
-                           "Freeball", "!", -2
+                           "Freeball", "!", -2,
+                           "Freeball dig", "=", -2,
+                           "Freeball dig", "#", -2,
+                           "Freeball dig", "+", -2,
+                           "Freeball dig", "-", -2,
+                           "Freeball dig", "!", -2,
+                           "Freeball over", "=", -2,
+                           "Freeball over", "#", -2,
+                           "Freeball over", "+", -2,
+                           "Freeball over", "-", -2,
+                           "Freeball over", "!", -2
                            )
 
     out <- dplyr::tribble(~skill, ~specific,
