@@ -66,7 +66,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
         if (nrow(video_filename) > 0) {
-            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file, , alt_path = alt_path, subtree_only = subtree_only))
+            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file, alt_path = alt_path, subtree_only = subtree_only))
         } else {
             video_filename <- NA_character_
         }
