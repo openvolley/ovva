@@ -57,8 +57,8 @@ ovva_shiny_server <- function(app_data) {
                     tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
                     out <- lapply(tmp, function(z) z$meta)
                 } else {
-                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                    out <- lapply(myfiles, function(z) read_dv(z, metadata_only = TRUE)$meta)
+                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                    out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) pv_read(z)$meta else read_dv(z, metadata_only = TRUE)$meta)
                 }
                 if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
                     try(out <- lapply(out, app_data$meta_preprocess))
@@ -107,8 +107,8 @@ ovva_shiny_server <- function(app_data) {
                             ## use alldata.rds if available
                             mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
                         } else {
-                            myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.dvw$", ignore.case = TRUE, full.names = TRUE)
-                            mydat <- bind_rows(lapply(myfiles, function(z) read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                            myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                            mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) pv_read(z)$plays else read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
                         }
                         mydat <- mydat[mydat$match_id %in% my_match_ids, ]
                         mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
