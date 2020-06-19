@@ -133,12 +133,6 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Game ID
-        game_id_list = reactive({
-            if (is.null(pbp_augment())) NULL else sort(unique(na.omit(pbp_augment()$game_id)))
-        })
-        observe({
-            updateSelectInput(session, "choose_game_id", choices = game_id_list())
-        })
         ## take chosen game_id from DT
         selected_game_id <- reactive({
             if (is.null(input$game_id_table_rows_selected) || is.null(game_table_data())) {
@@ -159,7 +153,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updateSelectInput(session, "team_list", choices = team_list())
+            isolate(sel <- intersect(team_list(), input$team_list))
+            updateSelectInput(session, "team_list", choices = team_list(), selected = sel)
         })
 
         ## Player ID
@@ -172,7 +167,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updatePickerInput(session, "player_list", choices = player_list())
+            isolate(sel <- intersect(player_list(), input$player_list))
+            updatePickerInput(session, "player_list", choices = player_list(), selected = sel)
         })
 
         ## Skill
@@ -185,7 +181,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updateSelectInput(session, "skill_list", choices = skill_list())
+            isolate(sel <- intersect(skill_list(), input$skill_list))
+            updateSelectInput(session, "skill_list", choices = skill_list(), selected = sel)
         })
 
         ## Pre-defined playlist
@@ -218,7 +215,7 @@ ovva_shiny_server <- function(app_data) {
             app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"]
         })
         output$highlight_based_ui <- renderUI({
-                if (length(game_id_list()) < 1) {
+                if (length(selected_game_id()) < 1) {
                     tags$div(class = "alert alert-info", "Choose a game first")
                 } else {
                 ## populate highlight_list options, keeping any existing selections
@@ -279,7 +276,7 @@ ovva_shiny_server <- function(app_data) {
         ## Advanced filter value
         adFilterValue_list = reactive({
             col_to_select <- input$adFilter_list
-            if (is.null(col_to_select) || !nzchar(col_to_select)) return(NULL)
+            if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
                 NULL
@@ -300,7 +297,7 @@ ovva_shiny_server <- function(app_data) {
         ## Advanced filter 2 value
         adFilterBValue_list = reactive({
             col_to_select <- input$adFilterB_list
-            if (is.null(col_to_select) || !nzchar(col_to_select)) return(NULL)
+            if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
                 NULL
