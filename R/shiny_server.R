@@ -81,14 +81,18 @@ ovva_shiny_server <- function(app_data) {
                 } else {
                     ## for each video file, check if it exists and try and find it if not
                     for (z in seq_along(out)) {
-                        try({
-                            if (isTRUE(app_data$video_subtree_only)) {
-                                out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
-                            } else {
-                                temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
-                                out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
-                            }
-                        })
+                        if (is_youtube_id(out[[z]]$video$file) || grepl("^https?://", out[[z]]$video$file, ignore.case = TRUE)) {
+                            ## do nothing
+                        } else {
+                            try({
+                                if (isTRUE(app_data$video_subtree_only)) {
+                                    out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
+                                } else {
+                                    temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
+                                    out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                                }
+                            })
+                        }
                     }
                     ## remove any files with no associated video
                     out <- Filter(Negate(is.null), lapply(out, function(z) if (nrow(z$video) == 1 && !is.na(z$video$file) && nzchar(z$video$file)) z))
@@ -493,7 +497,7 @@ ovva_shiny_server <- function(app_data) {
                             system2("ln", c("-s", thisf, symlink_abspath))
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
-                        } else if (is_youtube_id(vf) || grepl("https?://", vf)) {
+                        } else if (is_youtube_id(vf) || grepl("https?://", vf, ignore.case = TRUE)) {
                             ## youtube ID or link to video, don't do anything
                         } else {
                             ## video file does not exist!
@@ -501,7 +505,7 @@ ovva_shiny_server <- function(app_data) {
                         }
                     }
                     meta_video$video_src <- file.path(app_data$video_server_url, basename(meta_video$file))
-                    nidx <- is_youtube_id(meta_video$file) | grepl("https?://", meta_video$file)
+                    nidx <- is_youtube_id(meta_video$file) | grepl("https?://", meta_video$file, ignore.case = TRUE)
                     ## replace these with verbatim copy of original info
                     meta_video$video_src[nidx] <- meta_video$file[nidx]
                 ##} else if (app_data$video_serve_method == "standalone") {
