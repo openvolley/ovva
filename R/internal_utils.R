@@ -75,7 +75,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
         return(vapply(seq_len(nrow(video_filename)), function(z) find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file[z], alt_path = alt_path, subtree_only = subtree_only), FUN.VALUE = "", USE.NAMES = FALSE))
     }
     if (length(video_filename) == 1 && !is.na(video_filename) && nzchar(video_filename)) {
-        if (fs::file_exists(video_filename) && !subtree_only) return(video_filename) ## ok, the path in the dvw file is actually correct, and we are allowing non-subtree paths
+        if (fs::file_exists(video_filename) && !subtree_only) return(as.character(video_filename)) ## ok, the path in the dvw file is actually correct, and we are allowing non-subtree paths
         ## otherwise let's go looking for it
         this_dir <- dirname(dvw_filename) ## actual file has to be under the same path
         out <- NA_character_
@@ -94,7 +94,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
             ff <- ff[fs::file_exists(ff)]
             if (length(ff) == 1) out <- ff
         }
-        out
+        as.character(out)
     } else {
         NA_character_
     }
