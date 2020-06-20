@@ -66,7 +66,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
         if (nrow(video_filename) > 0) {
-            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file, alt_path = alt_path, subtree_only = subtree_only))
+            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = fs::fs_path(video_filename$file), alt_path = alt_path, subtree_only = subtree_only))
         } else {
             video_filename <- NA_character_
         }
@@ -82,14 +82,14 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
         if (!fs::dir_exists(this_dir) && !fs::link_exists(this_dir)) {
             ## do nothing yet, maybe try the alt path below
         } else {
-            possible_paths <- c(this_dir, fs::dir_ls(this_dir, type = "dir", recurse = TRUE))
+            possible_paths <- c(this_dir, fs::dir_ls(this_dir, type = c("dir", "symlink"), recurse = TRUE))
             ff <- fs::path(possible_paths, basename(video_filename))
             ff <- ff[fs::file_exists(ff)]
             if (length(ff) ==1) out <- ff
         }
         if (is.na(out) && !is.null(alt_path) && (fs::dir_exists(alt_path) || fs::link_exists(alt_path))) {
             ## didn't find it under the subtree, try the alt path
-            possible_paths <- c(alt_path, fs::dir_ls(alt_path, type = "dir", recurse = TRUE))
+            possible_paths <- c(alt_path, fs::dir_ls(alt_path, type = c("dir", "symlink"), recurse = TRUE))
             ff <- fs::path(possible_paths, basename(video_filename))
             ff <- ff[fs::file_exists(ff)]
             if (length(ff) == 1) out <- ff
