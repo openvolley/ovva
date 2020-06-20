@@ -83,9 +83,9 @@ ovva_shiny_server <- function(app_data) {
                     for (z in seq_along(out)) {
                         try({
                             if (isTRUE(app_data$video_subtree_only)) {
-                                out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file, subtree_only = TRUE, alt_path = app_data$alt_video_path)
+                                out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
                             } else {
-                                temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = out[[z]]$video$file, subtree_only = FALSE, alt_path = app_data$alt_video_path)
+                                temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
                                 out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
                             }
                         })
@@ -508,7 +508,7 @@ ovva_shiny_server <- function(app_data) {
                     ##    meta_video$video_src <- meta_video$file ## full (local) path
                 } else if (is.function(app_data$video_serve_method)) {
                     if (nrow(meta_video) > 0) {
-                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
+                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = fs::fs_path(meta_video$file[z]), dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
                     } else {
                         meta_video$video_src <- character()
                     }
