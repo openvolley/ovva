@@ -512,7 +512,7 @@ ovva_shiny_server <- function(app_data) {
                     ##    meta_video$video_src <- meta_video$file ## full (local) path
                 } else if (is.function(app_data$video_serve_method)) {
                     if (nrow(meta_video) > 0) {
-                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = fs::fs_path(meta_video$file[z]), dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
+                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
                     } else {
                         meta_video$video_src <- character()
                     }
@@ -540,7 +540,7 @@ ovva_shiny_server <- function(app_data) {
                                                                            .data$skill == "Attack" ~ .data$attack_description),
                                          subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                          subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
-                    vpt <- if (all(is_youtube_id(meta_video$video_src))) {
+                    vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE))) {
                                "youtube"
                            } else {
                                "local"
