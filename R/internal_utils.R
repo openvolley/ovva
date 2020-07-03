@@ -61,37 +61,49 @@ is_youtube_id <- function(z) nchar(z) == 11 & grepl("^[[:alnum:]_\\-]+$", z)
 
 ## internal function to try and locate a video file, when the path embedded in the dvw file is for another computer
 ## dvw_filename should be full path to file
-find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE) {
+find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE) {
     stopifnot(length(dvw_filename) == 1) ## single dvw file, but can handle multiple video files
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
-        if (nrow(video_filename) > 0) {
-            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = fs::fs_path(video_filename$file), alt_path = alt_path, subtree_only = subtree_only))
+        if (!is.null(video_filename) && nrow(video_filename) > 0) {
+            return(find_video_in_subtree(dvw_filename = dvw_filename, video_filename = fs::fs_path(video_filename$file), alt_path = alt_path, subtree_only = subtree_only, ignore_case = ignore_case))
         } else {
             video_filename <- NA_character_
         }
     }
     if (length(video_filename) > 1) {
-        return(vapply(seq_len(nrow(video_filename)), function(z) find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename$file[z], alt_path = alt_path, subtree_only = subtree_only), FUN.VALUE = "", USE.NAMES = FALSE))
+        return(vapply(seq_along(video_filename), function(z) find_video_in_subtree(dvw_filename = dvw_filename, video_filename = video_filename[z], alt_path = alt_path, subtree_only = subtree_only, ignore_case = ignore_case), FUN.VALUE = "", USE.NAMES = FALSE))
     }
     if (length(video_filename) == 1 && !is.na(video_filename) && nzchar(video_filename)) {
         if (fs::file_exists(video_filename) && !subtree_only) return(as.character(video_filename)) ## ok, the path in the dvw file is actually correct, and we are allowing non-subtree paths
         ## otherwise let's go looking for it
         this_dir <- dirname(dvw_filename) ## actual file has to be under the same path
         out <- NA_character_
+        look_for_it <- function(vfilename, top_dir, ignore_case) {
+            if (inherits(vfilename, "regex")) {
+                ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = vfilename, ignore.case = ignore_case)
+            } else {
+                if (ignore_case) {
+                    ## yikes, this could be slow on a big directory
+                    ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = paste0("\\.(", video_file_extensions, ")$"), ignore.case = TRUE)
+                    ff <- ff[tolower(basename(ff)) == tolower(basename(vfilename))]
+                } else {
+                    possible_paths <- c(top_dir, fs::dir_ls(top_dir, type = "dir", recurse = TRUE))
+                    ff <- fs::path(possible_paths, basename(vfilename))
+                    ff <- ff[fs::file_exists(ff)]
+                }
+            }
+            ff
+        }
         if (!fs::dir_exists(this_dir) && !fs::link_exists(this_dir)) {
             ## do nothing yet, maybe try the alt path below
         } else {
-            possible_paths <- c(this_dir, fs::dir_ls(this_dir, type = c("dir", "symlink"), recurse = TRUE))
-            ff <- fs::path(possible_paths, basename(video_filename))
-            ff <- ff[fs::file_exists(ff)]
+            ff <- look_for_it(video_filename, top_dir = this_dir, ignore_case = ignore_case)
             if (length(ff) ==1) out <- ff
         }
         if (is.na(out) && !is.null(alt_path) && (fs::dir_exists(alt_path) || fs::link_exists(alt_path))) {
             ## didn't find it under the subtree, try the alt path
-            possible_paths <- c(alt_path, fs::dir_ls(alt_path, type = c("dir", "symlink"), recurse = TRUE))
-            ff <- fs::path(possible_paths, basename(video_filename))
-            ff <- ff[fs::file_exists(ff)]
+            ff <- look_for_it(video_filename, top_dir = alt_path, ignore_case = ignore_case)
             if (length(ff) == 1) out <- ff
         }
         as.character(out)
