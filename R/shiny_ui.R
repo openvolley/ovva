@@ -4,7 +4,7 @@ ovva_shiny_ui <- function(app_data) {
         ovideo::ov_video_js(youtube = TRUE),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
-                 tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;}"),
+                 tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;} h5 {font-weight: bold;}"),
                  if (!is.null(app_data$css)) tags$style(app_data$css)
              ),
         if (!is.null(app_data$ui_header)) {
@@ -102,7 +102,26 @@ ovva_shiny_ui_main <- function() {
                                                         data.step = 10, data.intro = "2nd Filter value")))
                      ),
             tags$hr(),
-            sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)
+            sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1),
+            tags$hr(),
+            tags$h5("Clip timing"),
+            fluidRow(column(3, actionButton("timing_all_start_minus", "All start -1")),
+                     column(3, actionButton("timing_all_start_plus", "All start +1")),
+                     column(3, actionButton("timing_all_duration_minus", "All duration -1")),
+                     column(3, actionButton("timing_all_duration_plus", "All duration +1"))),
+            tags$table(tags$tr(tags$th("Skill"), tags$th("Phase"), tags$th("Start offset"), tags$th("Duration")),
+                       timing_to_trow("Serve", "Serve"),
+                       timing_to_trow("Reception", "Reception"),
+                       timing_to_trow("Set", "Reception"),
+                       timing_to_trow("Set", "Transition"),
+                       timing_to_trow("Attack", "Reception"),
+                       timing_to_trow("Attack", "Transition"),
+                       timing_to_trow("Block", "Reception"),
+                       timing_to_trow("Block", "Transition"),
+                       timing_to_trow("Dig", "Transition"),
+                       timing_to_trow("Freeball", "Reception"),
+                       timing_to_trow("Freeball", "Transition")
+                       )
         ),
         mainPanel(
             introbox_or_div(title = "Video",

@@ -550,7 +550,7 @@ ovva_shiny_server <- function(app_data) {
                     if (!is.null(input$highlight_list)) {
                         pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
                     } else {
-                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = ovideo::ov_video_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill"))
                     }
                     ## also keep track of actual file paths
                     pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
@@ -558,6 +558,48 @@ ovva_shiny_server <- function(app_data) {
                 pl
             }
         })
+
+        clip_timing <- reactive({
+            ## parse timing from inputs, with fallback to ov_video_timing_df() if it fails
+            tryCatch({
+                ## defaults
+                def <- ovideo::ov_video_timing_df()
+                ## need to explicitly list all the inputs to get reactivity, ergh
+                blah <- list(input$timing_serve_serve_start_offset, input$timing_serve_serve_duration,
+                             input$timing_reception_reception_start_offset, input$timing_reception_reception_duration,
+                             input$timing_set_reception_start_offset, input$timing_set_reception_duration,
+                             input$timing_set_transition_start_offset, input$timing_set_transition_duration,
+                             input$timing_attack_reception_start_offset, input$timing_attack_reception_duration,
+                             input$timing_attack_transition_start_offset, input$timing_attack_transition_duration,
+                             input$timing_block_reception_start_offset, input$timing_block_reception_duration,
+                             input$timing_block_transition_start_offset, input$timing_block_transition_duration,
+                             input$timing_dig_transition_start_offset, input$timing_dig_transition_duration,
+                             input$timing_freeball_reception_start_offset, input$timing_freeball_reception_duration,
+                             input$timing_freeball_transition_start_offset, input$timing_freeball_transition_duration)
+                for (ri in seq_len(nrow(def))) {
+                    skill <- def$skill[ri]
+                    phase <- def$phase[ri]
+                    def$start_offset[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset")]]
+                    def$duration[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_duration")]]
+                }
+                def
+            }, error = function(e) ovideo::ov_video_timing_df())
+        })
+        tweak_all_timings <- function(which, by) {
+            if (which %in% c("start_offset", "duration") && is.numeric(by)) {
+                def <- data.frame(skill = c("serve", "reception", "set", "set", "attack", "attack", "block", "block", "dig", "freeball", "freeball"),
+                                  phase = c("serve", "reception", "reception", "transition", "reception", "transition", "reception", "transition", "transition", "reception", "transition"),
+                                  stringsAsFactors = FALSE)
+                for (ri in seq_len(nrow(def))) {
+                    thisid <- paste0("timing_", def$skill[ri], "_", def$phase[ri], "_", which)
+                    updateNumericInput(session, inputId = thisid, value = input[[thisid]] + by)
+                }
+            }
+        }
+        observeEvent(input$timing_all_start_minus, tweak_all_timings("start_offset", -1))
+        observeEvent(input$timing_all_start_plus, tweak_all_timings("start_offset", 1))
+        observeEvent(input$timing_all_duration_minus, tweak_all_timings("duration", -1))
+        observeEvent(input$timing_all_duration_plus, tweak_all_timings("duration", 1))
 
         ## video stuff
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
