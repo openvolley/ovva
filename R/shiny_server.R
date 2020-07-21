@@ -138,14 +138,26 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID
         ## take chosen game_id from DT
+        
+        # selected_game_id <- reactive({
+        #     if (is.null(input$game_id_table_rows_selected) || is.null(game_table_data())) {
+        #         NULL
+        #     } else {
+        #         game_table_data()$game_id[input$game_id_table_rows_selected]
+        #     }
+        # })
+
         selected_game_id <- reactive({
-            if (is.null(input$game_id_table_rows_selected) || is.null(game_table_data())) {
+            if (is.null(input$game_table_dropdown) || is.null(game_table_data())) {
                 NULL
             } else {
-                game_table_data()$game_id[input$game_id_table_rows_selected]
+                datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+                datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
+                dplyr::pull(dplyr::select(datatble, .data$display_ID))
+                datatble$game_id[datatble$display_ID %eq% input$game_table_dropdown]
             }
         })
-
+        
 
         ## Team
         team_list = reactive({
@@ -157,8 +169,12 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            isolate(sel <- intersect(team_list(), input$team_list))
-            updateSelectInput(session, "team_list", choices = team_list(), selected = sel)
+            if(is.null(input$team_list)){
+                isolate(sel <- team_list())
+            } else{
+                isolate(sel <- intersect(team_list(), input$team_list))
+            }
+            updatePickerInput(session, "team_list", choices = team_list(), selected = sel)
         })
 
         ## Player ID
@@ -171,7 +187,11 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            isolate(sel <- intersect(player_list(), input$player_list))
+            if(is.null(input$player_list)){
+                isolate(sel <- player_list())
+            } else{
+                isolate(sel <- intersect(player_list(), input$player_list))
+            }
             updatePickerInput(session, "player_list", choices = player_list(), selected = sel)
         })
 
@@ -185,8 +205,12 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            isolate(sel <- intersect(skill_list(), input$skill_list))
-            updateSelectInput(session, "skill_list", choices = skill_list(), selected = sel)
+            if(is.null(input$skill_list)){
+                isolate(sel <- skill_list())
+            } else{
+                isolate(sel <- intersect(skill_list(), input$skill_list))
+            }
+            updatePickerInput(session, "skill_list", choices = skill_list(), selected = sel)
         })
 
         ## Pre-defined playlist
@@ -349,10 +373,42 @@ ovva_shiny_server <- function(app_data) {
         })
         output$game_id_table <- DT::renderDataTable({
             DT::datatable(game_table_data(), extensions = "Scroller", filter = "top",
-                          options = list(sDom='<"top">t<"bottom">rlip', deferRender = TRUE, scrollY = 200, scroller = TRUE),
+                          options = list(sDom='<"top">t<"bottom">rlip', deferRender = TRUE, scrollY = 100, scroller = TRUE),
                           rownames = FALSE, colnames = c("Game ID", "Game date", "Away", "Home"))
         })
 
+        
+        game_table_dropdown <- reactive({
+            if (is.null(pbp_augment())) {
+                output$no_game_data <- renderUI(
+                    if (is.null(input$season)) {
+                        tags$div(class = "alert alert-info", "No competition data sets. Log in?")
+                    } else if (!is.null(meta()) && is.null(pbp())) {
+                        tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                    } else if (is.null(meta()) && have_done_startup()) {
+                        if (isTRUE(isolate(got_no_video()))) {
+                            tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                        } else {
+                            tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
+                        }
+                    } else {
+                        NULL
+                    })
+                NULL
+            } else {
+                output$no_game_data <- renderUI(NULL)
+                ## Customize pbp
+                datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+                datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
+                dplyr::pull(dplyr::select(datatble, .data$display_ID))
+            }
+        })
+        
+        observe({
+            isolate(sel <- intersect(game_table_dropdown(), input$game_table_dropdown))
+            updatePickerInput(session, "game_table_dropdown", choices = game_table_dropdown(), selected = sel)
+        })
+        
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
         playstable_data <- reactive({
             ## Customize pbp
