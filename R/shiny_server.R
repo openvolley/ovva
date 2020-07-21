@@ -169,11 +169,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            if(is.null(input$team_list)){
-                isolate(sel <- team_list())
-            } else{
-                isolate(sel <- intersect(team_list(), input$team_list))
-            }
+            isolate(sel <- intersect(team_list(), input$team_list))
+            if (length(sel) < 1) sel <- team_list() ## select all
             updatePickerInput(session, "team_list", choices = team_list(), selected = sel)
         })
 
@@ -187,11 +184,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            if(is.null(input$player_list)){
-                isolate(sel <- player_list())
-            } else{
-                isolate(sel <- intersect(player_list(), input$player_list))
-            }
+            isolate(sel <- intersect(player_list(), input$player_list))
+            if (length(sel) < 1) sel <- player_list() ## select all
             updatePickerInput(session, "player_list", choices = player_list(), selected = sel)
         })
 
@@ -205,11 +199,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            if(is.null(input$skill_list)){
-                isolate(sel <- skill_list())
-            } else{
-                isolate(sel <- intersect(skill_list(), input$skill_list))
-            }
+            isolate(sel <- intersect(skill_list(), input$skill_list))
+            if (length(sel) < 1) sel <- skill_list() ## select all
             updatePickerInput(session, "skill_list", choices = skill_list(), selected = sel)
         })
 
@@ -670,7 +661,7 @@ ovva_shiny_server <- function(app_data) {
                     js_show("dvyt_player")
                 }
                 ov_video_control("stop")
-                evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play"))
+                evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
             } else {
                 ov_video_control("stop") ## empty playlist, so stop the video
             }
