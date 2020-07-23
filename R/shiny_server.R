@@ -521,7 +521,6 @@ ovva_shiny_server <- function(app_data) {
         })
 
         playlist <-reactive({
-            pbp <- pbp_augment()
             ## Customize pbp
             if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id())) {
                 NULL
@@ -779,5 +778,52 @@ ovva_shiny_server <- function(app_data) {
 ##                tags$a(href = sub("file:////", "file:///", paste0("file:///", preview_filename()), fixed = TRUE), target = "_blank", "Open preview (right click -> new tab)")
 ##            })
 ##        })
+
+        ## height of the video player element
+        vo_height <- reactiveVal("auto")
+        observe({
+            if (video_player_type() %eq% "youtube") {
+                if (!is.null(input$dvyt_height) && as.numeric(input$dvyt_height) > 0) {
+                    vo_height(as.numeric(input$dvyt_height))
+                    evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
+                } else {
+                    vo_height("auto")
+                    evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
+                }
+            } else {
+                if (!is.null(input$dv_height) && as.numeric(input$dv_height) > 0) {
+                    vo_height(as.numeric(input$dv_height))
+                    evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
+                } else {
+                    vo_height("auto")
+                    evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
+                }
+            }
+        })
+        ## width of the video player element
+        vo_width <- reactiveVal("auto")
+        observe({
+            if (video_player_type() %eq% "youtube") {
+                if (!is.null(input$dvyt_width) && as.numeric(input$dvyt_width) > 0) {
+                    vo_width(as.numeric(input$dvyt_width))
+                } else {
+                    vo_width("auto")
+                }
+            } else {
+                if (!is.null(input$dv_width) && as.numeric(input$dv_width) > 0) {
+                    vo_width(as.numeric(input$dv_width))
+                } else {
+                    vo_width("auto")
+                }
+            }
+        })
+        ## height of the video player container, use as negative vertical offset on the overlay element
+        observe({
+            if (!is.null(input$vo_voffset) && as.numeric(input$vo_voffset) > 0) {
+                evaljs(paste0("document.getElementById('video_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
+            } else {
+                evaljs("document.getElementById('video_overlay').style.marginTop = '0px';")
+            }
+        })
     }
 }

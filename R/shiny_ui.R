@@ -21,6 +21,24 @@ ovva_shiny_ui <- function(app_data) {
 ovva_shiny_ui_main <- function() {
     sidebarLayout(
         sidebarPanel(
+            ## js to track size of video element
+            tags$head(tags$script(src = "ovvajs/jquery.elementresize.js"),
+                      tags$script("var vo_rsztmr;
+$(document).on('shiny:sessioninitialized', function() {
+    Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+    $(window).resize(function() {
+      clearTimeout(vo_rsztmr);
+      vo_rsztmr = setTimeout(vo_doneResizing, 500); });
+    function vo_doneResizing() {
+      Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+    }
+});
+$('#dv_player').on('elementResize', function(event) {
+    Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+});
+$('#dvyt_player').on('elementResize', function(event) {
+    Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+});")),
             introbox_or_div(selectInput("season", label = tags$h4("Competition directory"), choices = NULL),
                             data.step = 1, data.intro = "Select volleyball season"),
             uiOutput("no_game_data"),
@@ -133,11 +151,12 @@ ovva_shiny_ui_main <- function() {
         mainPanel(
             introbox_or_div(title = "Video",
                             tabPanel("Video",
-                                     tagList(ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 90%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
-                                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
-                                             uiOutput("player_controls_ui"),
-                                             uiOutput("video_dialog")
-                                             )##,
+                                     tags$div(id = "video_holder",
+                                              ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 90%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
+                                              ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;")), ## start hidden
+                                     plotOutput("video_overlay"),
+                                     uiOutput("player_controls_ui", style = "margin-top: 12px;"),
+                                     uiOutput("video_dialog")
                                      ##uiOutput("preview_button_ui", inline = TRUE),
                                      ##uiOutput("open_preview_ui", inline = TRUE),
                                      ),
