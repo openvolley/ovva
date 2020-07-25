@@ -147,12 +147,11 @@ ovva_shiny_server <- function(app_data) {
                 datatble$game_id[datatble$display_ID %eq% input$game_table_dropdown]
             }
         })
-        
 
         ## Team
         team_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
                 sort(unique(na.omit(tmp$team)))
@@ -167,7 +166,7 @@ ovva_shiny_server <- function(app_data) {
         ## Player ID
         player_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$player_name)))
@@ -182,7 +181,7 @@ ovva_shiny_server <- function(app_data) {
         ## Skill
         skill_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$skill)))
@@ -242,7 +241,7 @@ ovva_shiny_server <- function(app_data) {
         ## Skilltype
         skilltype_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
                 sort(unique(tmp$skilltype))
@@ -255,7 +254,7 @@ ovva_shiny_server <- function(app_data) {
         ## Phase
         phase_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp$phase))
@@ -268,7 +267,7 @@ ovva_shiny_server <- function(app_data) {
         ## Advanced filter
         adFilter_list = reactive({
             if (is.null(pbp_augment())) {
-                NULL
+                character()
             } else {
                 temp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 avail <- colnames(temp)
@@ -288,7 +287,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp[[col_to_select]]))
@@ -309,7 +308,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || length(col_to_select) < 1) {
-                NULL
+                character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp[[col_to_select]]))
@@ -369,7 +368,7 @@ ovva_shiny_server <- function(app_data) {
                     } else {
                         NULL
                     })
-                NULL
+                character()
             } else {
                 output$no_game_data <- renderUI(NULL)
                 ## Customize pbp
@@ -618,7 +617,9 @@ ovva_shiny_server <- function(app_data) {
                 ov_video_control("stop")
                 evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
             } else {
-                ov_video_control("stop") ## empty playlist, so stop the video
+                ## empty playlist, so stop the video, and clean things up
+                evaljs("dvjs_clear_playlist()")
+                evaljs("document.getElementById(\"subtitle\").textContent=\"Score\"; document.getElementById(\"subtitleskill\").textContent=\"Skill\";")
             }
         })
         output$player_controls_ui <- renderUI({
