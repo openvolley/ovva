@@ -618,7 +618,8 @@ ovva_shiny_server <- function(app_data) {
                 evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
             } else {
                 ## empty playlist, so stop the video, and clean things up
-                evaljs("dvjs_clear_playlist()")
+                evaljs("dvjs_clear_playlist();")
+                ## evaljs("remove_vspinner();") ## doesn't have an effect?
                 evaljs("document.getElementById(\"subtitle\").textContent=\"Score\"; document.getElementById(\"subtitleskill\").textContent=\"Skill\";")
             }
         })
