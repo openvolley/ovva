@@ -137,16 +137,6 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Game ID
-        ## take chosen game_id from DT
-        
-        # selected_game_id <- reactive({
-        #     if (is.null(input$game_id_table_rows_selected) || is.null(game_table_data())) {
-        #         NULL
-        #     } else {
-        #         game_table_data()$game_id[input$game_id_table_rows_selected]
-        #     }
-        # })
-
         selected_game_id <- reactive({
             if (is.null(input$game_table_dropdown) || is.null(game_table_data())) {
                 NULL
@@ -362,13 +352,7 @@ ovva_shiny_server <- function(app_data) {
                 dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
             }
         })
-        output$game_id_table <- DT::renderDataTable({
-            DT::datatable(game_table_data(), extensions = "Scroller", filter = "top",
-                          options = list(sDom='<"top">t<"bottom">rlip', deferRender = TRUE, scrollY = 100, scroller = TRUE),
-                          rownames = FALSE, colnames = c("Game ID", "Game date", "Away", "Home"))
-        })
 
-        
         game_table_dropdown <- reactive({
             if (is.null(pbp_augment())) {
                 output$no_game_data <- renderUI(
@@ -451,34 +435,6 @@ ovva_shiny_server <- function(app_data) {
                 pbp_tmp
             }
         })
-        ## this not needed if using playstable output instead of recap (summary)
-        ##        recap_dt <- reactive({
-        ##            if (is.null(playstable_data())) {
-        ##                NULL
-        ##            } else {
-        ##                game_select <- selected_game_id()
-        ##                if (!is.null(input$highlight_list) & !is.null(game_select)) {
-        ##                    pbp_game_id <- dplyr::summarize(group_by(playstable_data(), .data$game_id, .data$point_id), N = n())
-        ##                    DT::datatable(pbp_game_id,
-        ##                                  extensions = "Scroller",
-        ##                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
-        ##                                  rownames = FALSE,
-        ##                                  colnames = c("Game ID", "Point ID", "N"))
-        ##
-        ##                } else {
-        ##                    pbp_game_id <- dplyr::summarize(group_by(playstable_data(), .data$game_id, .data$evaluation_code), N = n())
-        ##                    DT::datatable(pbp_game_id,
-        ##                                  extensions = "Scroller",
-        ##                                  filter = "top", options = list(deferRender = TRUE, scrollY = 200, scroller = TRUE),
-        ##                                  rownames = FALSE,
-        ##                                  colnames = c("Game ID", "Evaluation", "N")
-        ##                                  )
-        ##                }
-        ##            }
-        ##        })
-        ##output$official_recap <- DT::renderDataTable({
-        ##    recap_dt()
-        ##})
 
         output$playstable <- DT::renderDataTable({
             mydat <- playstable_data()
@@ -746,38 +702,6 @@ ovva_shiny_server <- function(app_data) {
         })
 
         output$chart_ui <- renderUI(app_data$chart_renderer)
-##        preview_filename <- reactiveVal(tempfile(fileext = ".html"))
-##        output$preview_button_ui <- renderUI({
-##            if (app_data$video_serve_method != "standalone" || is.null(playlist())) {
-##                NULL
-##            } else {
-##                actionButton("preview_button", "Make preview")
-##            }
-##        })
-##        observeEvent(input$preview_button, {
-##            ## make standalone player of current playlist
-##            working_dir <- tempfile()
-##            dir.create(working_dir)
-##            rmd_template <- file.path(working_dir, "player.Rmd")
-##            if (!file.copy(from = "standalone_template.Rmd", to = rmd_template)) stop("cannot copy template file to temporary directory")
-##            outfile <- preview_filename() ## just use the same file for all previews, so that it can just be refreshed in the browser
-##            ## parms to pass to Rmd template
-##            vsx <- list(playlist = playlist(),
-##                        game_id = selected_game_id(),
-##                        skill = input$skill_list,
-##                        player = input$player_list,
-##                        team = input$team_list,
-##                        skilltype = input$skilltype_list,
-##                        phase = input$phase_list,
-##                        recap_dt = recap_dt(), chart = chart_to_plot(),
-##                        banner = fs::path_real("www/banner.png"))
-##
-##            blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-##            render(rmd_template, output_file = outfile)
-##            output$open_preview_ui <- renderUI({
-##                tags$a(href = sub("file:////", "file:///", paste0("file:///", preview_filename()), fixed = TRUE), target = "_blank", "Open preview (right click -> new tab)")
-##            })
-##        })
 
         ## height of the video player element
         vo_height <- reactiveVal("auto")

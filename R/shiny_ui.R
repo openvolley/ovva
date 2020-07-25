@@ -43,8 +43,6 @@ $('#dvyt_player').on('elementResize', function(event) {
                             data.step = 1, data.intro = "Select volleyball season"),
             uiOutput("no_game_data"),
             uiOutput("processing_note"),
-            # introbox_or_div(DT::dataTableOutput("game_id_table"),
-            #                 data.step = 2, data.intro = "Search for the Game ID"),
             fluidRow(
                 tags$h5("Select"),
                 column(12, introbox_or_div(pickerInput(inputId = "game_table_dropdown",
