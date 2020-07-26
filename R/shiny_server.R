@@ -438,8 +438,8 @@ ovva_shiny_server <- function(app_data) {
         output$playstable <- DT::renderDataTable({
             mydat <- playstable_data()
             if (!is.null(mydat)) {
-                DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,##colnames = cnames,
-                              extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"), ## "single", ##filter = "top",
+                DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,
+                              extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"),
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE)) ## no column sorting
             } else {
                 NULL
@@ -469,17 +469,16 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$playstable_current_item)) playstable_select_row(input$playstable_current_item+1)
         })
         ## when the user chooses a row in the playstable, it will be selected by that click action, so we just need to play it
-        ## note that this will also be triggered by the DT::selectRows call in playstable_select_row
-        observeEvent(input$playstable_rows_selected, {
-            ##if (!is.null(input$playstable_rows_selected) && (is.null(input$playstable_current_item) || input$playstable_rows_selected != (input$playstable_current_item+1))) {
-            if (!is.null(input$playstable_rows_selected) && input$playstable_rows_selected != master_playstable_selected_row) {
-                ## don't call this if the selected row is already the current item, otherwise we re-start the same clip
-                master_playstable_selected_row <<- input$playstable_rows_selected
-                evaljs(paste0("dvjs_video_controller.current=", input$playstable_rows_selected-1, "; dvjs_video_play();"))
+        ## use input$playstable_cell_clicked rather than input$playstable_rows_selected to detect user input, because the latter is also triggered by the player incrementing rows
+        observeEvent(input$playstable_cell_clicked, {
+            clicked_row <- input$playstable_cell_clicked$row ## 1-based
+            if (!is.null(clicked_row) && !is.na(clicked_row) && clicked_row != master_playstable_selected_row) {
+                master_playstable_selected_row <<- clicked_row
+                evaljs(paste0("dvjs_video_controller.current=", clicked_row-1, "; dvjs_video_play();"))
             }
         })
 
-        playlist <-reactive({
+        playlist <- reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id())) {
                 NULL
