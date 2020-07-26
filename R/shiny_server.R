@@ -457,7 +457,7 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(selr)) {
                 ## scrolling works on the VISIBLE row index, so it depends on any column filters that might have been applied
                 visible_rowidx <- which(input$playstable_rows_all == selr)
-                scrollto <- max(visible_rowidx-1-5, 0) ## -1 for zero indexing, -5 to keep the selected row 5 from the top
+                scrollto <- max(visible_rowidx-1-2, 0) ## -1 for zero indexing, -2 to keep the selected row 2 from the top
                 evaljs(paste0("$('#playstable').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
             }
         }
@@ -629,7 +629,7 @@ ovva_shiny_server <- function(app_data) {
             ##} else {
                 tags$div(tags$button("Play", onclick = "dvjs_video_play();"),
                          tags$button("Prev", onclick = "dvjs_video_prev();"),
-                         tags$button("Next", onclick = "dvjs_video_next();"),
+                         tags$button("Next", onclick = "dvjs_video_next(false);"),
                          tags$button("Pause", onclick = "dvjs_video_pause();"),
                          tags$button("Back 1s", onclick = "dvjs_jog(-1);"),
                          tags$span(id = "subtitle", "Score"),
