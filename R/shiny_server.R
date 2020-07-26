@@ -445,9 +445,12 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             }
         })
-        playstable_proxy <- DT::dataTableProxy("playstable")
+        playstable_proxy <- DT::dataTableProxy("playstable", deferUntilFlush = TRUE)
+        master_playstable_selected_row <- -99L ## non-reactive
         playstable_select_row <- function(rw) {
-            if (!is.null(rw) && !is.na(rw) && (is.null(input$playstable_rows_selected) || rw != input$playstable_rows_selected)) {
+            ##if (!is.null(rw) && !is.na(rw) && (is.null(input$playstable_rows_selected) || rw != input$playstable_rows_selected)) {
+            if (!is.null(rw) && !is.na(rw) && (rw != master_playstable_selected_row)) {
+                master_playstable_selected_row <<- rw
                 DT::selectRows(playstable_proxy, rw)
                 scroll_playstable(rw)
             }
@@ -461,17 +464,18 @@ ovva_shiny_server <- function(app_data) {
                 evaljs(paste0("$('#playstable').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
             }
         }
-        ## when player changes item, update the selected row in the playstable and play it
+        ## when player changes item, it triggers input$playstable_current_item via the video_onstart() function. Update the selected row in the playstable
         observeEvent(input$playstable_current_item, {
             if (!is.null(input$playstable_current_item)) playstable_select_row(input$playstable_current_item+1)
         })
-        ## when the user chooses a row in the playstable, play it
+        ## when the user chooses a row in the playstable, it will be selected by that click action, so we just need to play it
         ## note that this will also be triggered by the DT::selectRows call in playstable_select_row
         observeEvent(input$playstable_rows_selected, {
-            if (!is.null(input$playstable_rows_selected) && (is.null(input$playstable_current_item) || input$playstable_rows_selected != (input$playstable_current_item+1))) {
+            ##if (!is.null(input$playstable_rows_selected) && (is.null(input$playstable_current_item) || input$playstable_rows_selected != (input$playstable_current_item+1))) {
+            if (!is.null(input$playstable_rows_selected) && input$playstable_rows_selected != master_playstable_selected_row) {
                 ## don't call this if the selected row is already the current item, otherwise we re-start the same clip
+                master_playstable_selected_row <<- input$playstable_rows_selected
                 evaljs(paste0("dvjs_video_controller.current=", input$playstable_rows_selected-1, "; dvjs_video_play();"))
-                ##playstable_select_row(input$playstable_rows_selected)
             }
         })
 
