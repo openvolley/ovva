@@ -22,8 +22,7 @@ ovva_shiny_ui_main <- function() {
     sidebarLayout(
         sidebarPanel(
             ## js to track size of video element
-            tags$head(tags$script(src = "ovvajs/jquery.elementresize.js"),
-                      tags$script("var vo_rsztmr;
+            tags$head(tags$script("var vo_rsztmr;
 $(document).on('shiny:sessioninitialized', function() {
     Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     $(window).resize(function() {
@@ -32,12 +31,6 @@ $(document).on('shiny:sessioninitialized', function() {
     function vo_doneResizing() {
       Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     }
-});
-$('#dv_player').on('elementResize', function(event) {
-    Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
-});
-$('#dvyt_player').on('elementResize', function(event) {
-    Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
 });")),
             introbox_or_div(selectInput("season", label = tags$h4("Competition directory"), choices = NULL),
                             data.step = 1, data.intro = "Select volleyball season"),
@@ -166,7 +159,7 @@ $('#dvyt_player').on('elementResize', function(event) {
             tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
             tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
             tags$style("video.loading { background: black; }"),
-            tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; }")
+            tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); document.getElementById(\"subtitle\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; document.getElementById(\"subtitleskill\").textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; if (dvjs_video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
         )
     )
 }
