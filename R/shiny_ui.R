@@ -127,7 +127,7 @@ $(document).on('shiny:sessioninitialized', function() {
                      column(3, actionButton("timing_all_duration_plus", "All duration +1"))),
             tags$table(tags$tr(tags$th("Skill"), tags$th("Phase"), tags$th("Start offset"), tags$th("Duration")),
                        timing_to_trow("Serve", "Serve"),
-                       timing_to_trow("Reception", "Reception"),
+                       timing_to_trow("Reception", "Reception", start_offset = -2),
                        timing_to_trow("Set", "Reception"),
                        timing_to_trow("Set", "Transition"),
                        timing_to_trow("Attack", "Reception"),
