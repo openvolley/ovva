@@ -26,6 +26,14 @@ preprocess_data <- function(x) {
         x <- mutate(x, receiving_team = case_when(.data$serving_team %eq% .data$home_team ~ .data$visiting_team,
                                                   .data$serving_team %eq% .data$visiting_team ~ .data$home_team))
     }
+    if (!"receiving_setter_position" %in% names(x)) {
+        x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team %eq% .data$home_team ~ .data$home_setter_position,
+                                                             .data$receiving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+    }
+    if (!"serving_setter_position" %in% names(x)) {
+        x <- mutate(x, serving_setter_position = case_when(.data$serving_team %eq% .data$home_team ~ .data$home_setter_position,
+                                                           .data$serving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+    }
     if (!"breakpoint/sideout" %in% names(x)) {
         x <- mutate(x, `breakpoint/sideout` = case_when(.data$team %eq% .data$receiving_team ~ "Sideout",
                                                         .data$team %eq% .data$serving_team ~ "Breakpoint"))

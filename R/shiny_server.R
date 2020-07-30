@@ -17,7 +17,9 @@ ovva_shiny_server <- function(app_data) {
             ##home_player_id1", "home_player_id2", "home_player_id3", "home_player_id4", "home_player_id5", "home_player_id6",
             ##"visiting_player_id1", "visiting_player_id2", "visiting_player_id3", "visiting_player_id4", "visiting_player_id5", "visiting_player_id6",
             "Set number" = "set_number", ##"team_touch_id",
-            "Home team" = "home_team", "Visiting team" = "visiting_team", "Point won by" = "point_won_by", "Serving team" = "serving_team", ##"game_date",
+            "Home team" = "home_team", "Visiting team" = "visiting_team", "Point won by" = "point_won_by",
+            "Receiving team" = "receiving_team", "Serving team" = "serving_team", ##"game_date",
+            "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position")
         ## helper function: get the right function from the playlist handler for a given skill and specific
         have_done_startup <- reactiveVal(FALSE)
