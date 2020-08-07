@@ -69,7 +69,7 @@ is_youtube_id <- function(z) nchar(z) == 11 & grepl("^[[:alnum:]_\\-]+$", z)
 
 ## internal function to try and locate a video file, when the path embedded in the dvw file is for another computer
 ## dvw_filename should be full path to file
-find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE) {
+find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE, file_extensions = video_file_extensions) {
     stopifnot(length(dvw_filename) == 1) ## single dvw file, but can handle multiple video files
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
@@ -93,7 +93,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
             } else {
                 if (ignore_case) {
                     ## yikes, this could be slow on a big directory
-                    ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = paste0("\\.(", video_file_extensions, ")$"), ignore.case = TRUE)
+                    ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = paste0("\\.(", file_extensions, ")$"), ignore.case = TRUE)
                     ff <- ff[tolower(basename(ff)) == tolower(basename(vfilename))]
                 } else {
                     possible_paths <- c(top_dir, fs::dir_ls(top_dir, type = "dir", recurse = TRUE))
