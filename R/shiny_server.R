@@ -546,6 +546,7 @@ ovva_shiny_server <- function(app_data) {
                                                                            .data$skill == "Attack" ~ .data$attack_description),
                                          subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                          subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
+                    event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
                     vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE))) {
                                "youtube"
                            } else {
