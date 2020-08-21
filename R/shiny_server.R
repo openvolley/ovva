@@ -250,7 +250,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = skilltype_list())
+            isolate(sel <- intersect(skilltype_list(), input$skilltype_list))
+            if (length(sel) < 1) sel <- skilltype_list() ## select all
+            updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = sel)
         })
 
         ## Phase
@@ -263,7 +265,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updatePickerInput(session, "phase_list", choices = phase_list(), selected = phase_list())
+            isolate(sel <- intersect(phase_list(), input$phase_list))
+            if (length(sel) < 1) sel <- phase_list() ## select all
+            updatePickerInput(session, "phase_list", choices = phase_list(), selected = sel)
         })
 
         ## Advanced filter
@@ -280,7 +284,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updateSelectInput(session, "adFilter_list", choices = adFilter_list())
+            isolate(sel <- intersect(adFilter_list(), input$adFilter_list))
+            if (length(sel) < 1) sel <- adFilter_list() ## select all
+            updateSelectInput(session, "adFilter_list", choices = adFilter_list(), selected = sel)
         })
 
         ## Advanced filter value
@@ -296,12 +302,16 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updatePickerInput(session, "adFilterValue_list", choices = adFilterValue_list(), selected = adFilterValue_list())
+            isolate(sel <- intersect(adFilterValue_list(), input$adFilterValue_list))
+            if (length(sel) < 1) sel <- adFilterValue_list() ## select all
+            updatePickerInput(session, "adFilterValue_list", choices = adFilterValue_list(), selected = sel)
         })
 
         ## Advanced filter 2
         observe({
-            updateSelectInput(session, "adFilterB_list", choices = adFilter_list())
+            isolate(sel <- intersect(adFilterB_list(), input$adFilterB_list))
+            if (length(sel) < 1) sel <- adFilterB_list() ## select all
+            updateSelectInput(session, "adFilterB_list", choices = sel)
         })
 
         ## Advanced filter 2 value
@@ -317,7 +327,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            updatePickerInput(session, "adFilterBValue_list", choices = adFilterBValue_list(), selected = adFilterBValue_list())
+            isolate(sel <- intersect(adFilterBValue_list(), input$adFilterBValue_list))
+            if (length(sel) < 1) sel <- adFilterBValue_list() ## select all
+            updatePickerInput(session, "adFilterBValue_list", choices = adFilterBValue_list(), selected = sel)
         })
 
         ## Help
