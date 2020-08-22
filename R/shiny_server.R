@@ -145,7 +145,6 @@ ovva_shiny_server <- function(app_data) {
             } else {
                 datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
                 datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
-                dplyr::pull(dplyr::select(datatble, .data$display_ID))
                 datatble$game_id[datatble$display_ID %eq% input$game_table_dropdown]
             }
         })
@@ -333,13 +332,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Help
-        observeEvent(input$help,
-                     rintrojs::introjs(session, options = list("nextLabel"="Next",
-                                                              "prevLabel"="Previous",
-                                                              "skipLabel"="Skip")
-                             )
-                     )
-
+        observeEvent(input$help, rintrojs::introjs(session, options = list("nextLabel" = "Next", "prevLabel" = "Previous", "skipLabel" = "Skip")))
 
         ## Game ID Table
         game_table_data <- reactive({
