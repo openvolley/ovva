@@ -140,7 +140,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID
         selected_game_id <- reactive({
-            if (is.null(input$game_table_dropdown) || is.null(game_table_data())) {
+            if (is.null(input$game_table_dropdown)) {
                 NULL
             } else {
                 datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
@@ -334,31 +334,6 @@ ovva_shiny_server <- function(app_data) {
         ## Help
         observeEvent(input$help, rintrojs::introjs(session, options = list("nextLabel" = "Next", "prevLabel" = "Previous", "skipLabel" = "Skip")))
 
-        ## Game ID Table
-        game_table_data <- reactive({
-            if (is.null(pbp_augment())) {
-                output$no_game_data <- renderUI(
-                    if (is.null(input$season)) {
-                        tags$div(class = "alert alert-info", "No competition data sets. Log in?")
-                    } else if (!is.null(meta()) && is.null(pbp())) {
-                        tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                    } else if (is.null(meta()) && have_done_startup()) {
-                        if (isTRUE(isolate(got_no_video()))) {
-                            tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                        } else {
-                            tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
-                        }
-                    } else {
-                        NULL
-                    })
-                NULL
-            } else {
-                output$no_game_data <- renderUI(NULL)
-                ## Customize pbp
-                dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
-            }
-        })
-
         game_table_dropdown <- reactive({
             if (is.null(pbp_augment())) {
                 output$no_game_data <- renderUI(
@@ -375,9 +350,12 @@ ovva_shiny_server <- function(app_data) {
                     } else {
                         NULL
                     })
+                ## hide the game selector if we have no games with video (or haven't selected a data set)
+                js_hide("game_table_dropdown")
                 character()
             } else {
                 output$no_game_data <- renderUI(NULL)
+                js_show("game_table_dropdown")
                 ## Customize pbp
                 datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
                 datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
@@ -762,5 +740,16 @@ ovva_shiny_server <- function(app_data) {
                 evaljs("document.getElementById('video_overlay').style.marginTop = '0px';")
             }
         })
+
+        ## panel show/hide
+        panel_visible <- reactiveValues(filter2 = FALSE)
+        observeEvent(input$collapse_filter2, {
+            if (panel_visible$filter2) js_hide("filter2_panel") else js_show("filter2_panel")
+            panel_visible$filter2 <- !panel_visible$filter2
+        })
+        observe({
+            if (panel_visible$filter2) updateActionButton(session, "collapse_filter2", label = "Hide") else updateActionButton(session, "collapse_filter2", label = "Show")
+        })
+
     }
 }

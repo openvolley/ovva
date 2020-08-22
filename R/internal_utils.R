@@ -134,8 +134,9 @@ introbox_or_div <- function(...) {
     if (requireNamespace("rintrojs", quietly = TRUE)) rintrojs::introBox(...) else tags$div(...)
 }
 
-timing_to_trow <- function(skill, phase, start_offset = -5, duration = 8) {
-    tags$tr(tags$td(skill), tags$td(phase),
-            tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset"), label = NULL, value = start_offset, width = "8ex")),
-            tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_duration"), label = NULL, value = duration, width = "8ex")))
+timing_tstart <- function(skill, phase, start_offset = -5) {
+    tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset"), label = NULL, value = start_offset, width = "8ex"))
+}
+timing_tdur <- function(skill, phase, duration = 8) {
+    tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_duration"), label = NULL, value = duration, width = "8ex"))
 }

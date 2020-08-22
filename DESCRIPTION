@@ -24,8 +24,6 @@ Imports:
     peranavolley,
     servr (>= 0.15.1),
     shiny,
-    shinycssloaders,
-    shinydashboard,
     shinyWidgets,
     sys,
     tidyr
