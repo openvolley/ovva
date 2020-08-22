@@ -285,7 +285,7 @@ ovva_shiny_server <- function(app_data) {
         })
         observe({
             isolate(sel <- intersect(adFilter_list(), input$adFilter_list))
-            if (length(sel) < 1) sel <- adFilter_list() ## select all
+            if (length(sel) < 1) sel <- character() ## select none
             updateSelectInput(session, "adFilter_list", choices = adFilter_list(), selected = sel)
         })
 
@@ -309,9 +309,9 @@ ovva_shiny_server <- function(app_data) {
 
         ## Advanced filter 2
         observe({
-            isolate(sel <- intersect(adFilterB_list(), input$adFilterB_list))
-            if (length(sel) < 1) sel <- adFilterB_list() ## select all
-            updateSelectInput(session, "adFilterB_list", choices = sel)
+            isolate(sel <- intersect(adFilter_list(), input$adFilterB_list))
+            if (length(sel) < 1) sel <- character() ## select none
+            updateSelectInput(session, "adFilterB_list", choices = adFilter_list(), selected = sel)
         })
 
         ## Advanced filter 2 value
