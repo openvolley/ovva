@@ -250,9 +250,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observe({
-            isolate(sel <- intersect(skilltype_list(), input$skilltype_list))
-            if (length(sel) < 1) sel <- skilltype_list() ## select all
-            updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = sel)
+            ## if the skilltype list changes, then we need to select all, otherwise we may have changes from e.g. just attacks to all skills, but we'll be restricted to just the previously-selected attack skill types
+            updatePickerInput(session, "skilltype_list", choices = skilltype_list(), selected = skilltype_list())
         })
 
         ## Phase
