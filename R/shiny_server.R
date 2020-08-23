@@ -40,8 +40,9 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         ## update the season choices
+        season_choices <- reactive(names(get_data_paths()))
         observe({
-            chc <- names(get_data_paths())
+            chc <- season_choices()
             isolate(sel <- input$season)
             if (!sel %in% chc) sel <- chc[1]
             updateSelectInput(session, "season", choices = chc, selected = sel)
@@ -52,7 +53,7 @@ ovva_shiny_server <- function(app_data) {
         got_no_video <- reactiveVal(FALSE)
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
-            if (!is.null(input$season) && input$season %in% names(get_data_paths())) {
+            if (!is.null(input$season) && input$season %in% season_choices()) {
                 showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
