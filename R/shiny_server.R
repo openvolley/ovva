@@ -451,13 +451,22 @@ ovva_shiny_server <- function(app_data) {
         }
         ## when player changes item, it triggers input$playstable_current_item via the video_onstart() function. Update the selected row in the playstable
         observeEvent(input$playstable_current_item, {
-            if (!is.null(input$playstable_current_item)) playstable_select_row(input$playstable_current_item+1)
+            if (!is.null(input$playstable_current_item)) {
+                ## input$playstable_current_item is 0-based
+                isolate(np <- nrow(playlist()))
+                if (input$playstable_current_item < np) {
+                    playstable_select_row(input$playstable_current_item+1)
+                } else {
+                    ## reached the end of the playlist
+                    master_playstable_selected_row <<- -99L
+                }
+            }
         })
         ## when the user chooses a row in the playstable, it will be selected by that click action, so we just need to play it
         ## use input$playstable_cell_clicked rather than input$playstable_rows_selected to detect user input, because the latter is also triggered by the player incrementing rows
-        observeEvent(input$playstable_cell_clicked, {
+        observeEvent(input$playstable_cell_clicked, { ## note, can't click the same row twice in a row ...
             clicked_row <- input$playstable_cell_clicked$row ## 1-based
-            if (!is.null(clicked_row) && !is.na(clicked_row) && clicked_row != master_playstable_selected_row) {
+            if (!is.null(clicked_row) && !is.na(clicked_row) && clicked_row != master_playstable_selected_row) { ## TODO take this last condition out?
                 master_playstable_selected_row <<- clicked_row
                 evaljs(paste0("dvjs_video_controller.current=", clicked_row-1, "; dvjs_video_play();"))
             }
