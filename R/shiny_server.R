@@ -492,7 +492,7 @@ ovva_shiny_server <- function(app_data) {
                             symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, basename(thisf))) ## TODO check that this works when deployed
                             suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
                             thisf <- gsub(" ", "\\\\ " , thisf) ## this may not work on Windows
-                            system2("ln", c("-s", thisf, symlink_abspath))
+                            fs::link_create(thisf, symlink_abspath) ##system2("ln", c("-s", thisf, symlink_abspath))
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                         } else if (is_youtube_id(vf) || grepl("https?://", vf, ignore.case = TRUE)) {
@@ -547,9 +547,9 @@ ovva_shiny_server <- function(app_data) {
                     ## TODO also check for mixed sources, which we can't handle yet
                     video_player_type(vpt)
                     if (!is.null(input$highlight_list)) {
-                        pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle"))
+                        pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle", plays_cols_to_show))
                     } else {
-                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill"))
+                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
                     }
                     ## also keep track of actual file paths
                     pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")

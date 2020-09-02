@@ -1,6 +1,6 @@
 Package: ovva
 Title: An R Shiny App for Volleyball Video Analysis
-Version: 0.3.12
+Version: 0.3.13
 Authors@R: c(person(given = "Adrien", family = "Ickowicz", role = c("aut", "cre"), email = "ickowicz.adrien@gmail.com"),
              person(given = "Ben", family = "Raymond", role = "aut"))
 Description: A Shiny app and supporting functions for analysis of volleyball video and scouted match files.
@@ -30,5 +30,5 @@ Imports:
 Suggests:
     rintrojs,
     testthat
-Remotes: openvolley/datavolley, openvolley/ovideo
+Remotes: openvolley/datavolley, openvolley/ovideo, openvolley/peranavolley
 RoxygenNote: 7.1.0
