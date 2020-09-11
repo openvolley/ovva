@@ -544,7 +544,7 @@ ovva_shiny_server <- function(app_data) {
                         NULL
                     }
                 })
-                meta_video[!is.na(meta_video$video_src) & nzchar(meta_video$video_src), ]
+                meta_video[which(!is.na(meta_video$video_src) & nzchar(meta_video$video_src)), ]
             }
         })
 
