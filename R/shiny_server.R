@@ -1,5 +1,6 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
+        trace_execution <- FALSE ## for debugging
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
@@ -20,7 +21,8 @@ ovva_shiny_server <- function(app_data) {
             "Home team" = "home_team", "Visiting team" = "visiting_team", "Point won by" = "point_won_by",
             "Receiving team" = "receiving_team", "Serving team" = "serving_team", ##"game_date",
             "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
-            "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position")
+            "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
+            "Receiving player" = "receiving_player", "Reception grade" = "reception_grade")
         ## helper function: get the right function from the playlist handler for a given skill and specific
         have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {
@@ -54,6 +56,7 @@ ovva_shiny_server <- function(app_data) {
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
+                if (trace_execution) cat("recalculating meta\n")
                 showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
@@ -374,6 +377,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || is.null(selected_game_id()) || is.null(meta())) {
                 NULL
             } else {
+                if (trace_execution) cat("recalculating playstable_data\n")
                 pbp <- pbp_augment()
                 meta <- meta()
                 game_select <- selected_game_id()
@@ -386,7 +390,6 @@ ovva_shiny_server <- function(app_data) {
                 filterB_var <- input$adFilterB_list
                 playlist_select <- input$playlist_list
                 highlight_select <- input$highlight_list
-
                 if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
                     myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
@@ -472,15 +475,22 @@ ovva_shiny_server <- function(app_data) {
             }
         })
 
-        playlist <- reactive({
-            ## Customize pbp
-            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id())) {
+        selected_matches <- reactive({
+            if (trace_execution) cat("recalculating selected matches\n")
+            if (is.null(meta())) {
                 NULL
             } else {
-                event_list <-  playstable_data()
-                match_select <- unique(na.omit(event_list$match_id))
+                unique(na.omit(unlist(lapply(meta(), function(z) z$match_id))))
+            }
+        })
+
+        video_meta <- reactive({
+            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id()) || is.null(selected_matches())) {
+                NULL
+            } else {
+                if (trace_execution) cat("recalculating video_meta\n")
                 meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
-                meta_video <- dplyr::filter(meta_video, .data$match_id %in% match_select)
+                meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_matches())
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
@@ -489,7 +499,7 @@ ovva_shiny_server <- function(app_data) {
                     ## may have multiple video files at this point
                     for (thisf in vf) {
                         if (fs::file_exists(thisf)) {
-                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, basename(thisf))) ## TODO check that this works when deployed
+                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, basename(thisf)))
                             suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
                             thisf <- gsub(" ", "\\\\ " , thisf) ## this may not work on Windows
                             fs::link_create(thisf, symlink_abspath) ##system2("ln", c("-s", thisf, symlink_abspath))
@@ -529,32 +539,37 @@ ovva_shiny_server <- function(app_data) {
                         NULL
                     }
                 })
-                meta_video <- meta_video[!is.na(meta_video$video_src) & nzchar(meta_video$video_src), ]
-                if (nrow(meta_video) < 1) {
-                    pl <- NULL
+                meta_video[!is.na(meta_video$video_src) & nzchar(meta_video$video_src), ]
+            }
+        })
+
+        playlist <- reactive({
+            ## Customize pbp
+            meta_video <- video_meta()
+            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
+                NULL
+            } else {
+                if (trace_execution) cat("recalculating playlist\n")
+                event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
+                                     skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
+                                                           .data$skill == "Attack" ~ .data$attack_description),
+                                     subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
+                                     subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
+                event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
+                vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE))) {
+                           "youtube"
+                       } else {
+                           "local"
+                       }
+                ## TODO also check for mixed sources, which we can't handle yet
+                video_player_type(vpt)
+                if (!is.null(input$highlight_list)) {
+                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("subtitle", plays_cols_to_show))
                 } else {
-                    event_list <- mutate(event_list, skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
-                                         skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
-                                                                           .data$skill == "Attack" ~ .data$attack_description),
-                                         subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
-                                         subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
-                    event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
-                    vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE))) {
-                               "youtube"
-                           } else {
-                               "local"
-                           }
-                    ## TODO also check for mixed sources, which we can't handle yet
-                    video_player_type(vpt)
-                    if (!is.null(input$highlight_list)) {
-                        pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type= vpt, extra_cols = c("subtitle", plays_cols_to_show))
-                    } else {
-                        pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type= vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
-                    }
-                    ## also keep track of actual file paths
-                    pl <- left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
                 }
-                pl
+                ## also keep track of actual file paths
+                left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
             }
         })
 

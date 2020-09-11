@@ -26,6 +26,12 @@ preprocess_data <- function(x) {
         x <- mutate(x, receiving_team = case_when(.data$serving_team %eq% .data$home_team ~ .data$visiting_team,
                                                   .data$serving_team %eq% .data$visiting_team ~ .data$home_team))
     }
+    if (!all(c("receiving_player", "reception_grade") %in% names(x))) {
+        x <- x[, setdiff(names(x), c("receiving_player", "reception_grade"))]
+        rpx <- dplyr::select(dplyr::filter(x, skill == "Reception"), "match_id", "point_id", receiving_player = "player_name", reception_grade = "evaluation")
+        rpx <- distinct(rpx, .data$match_id, .data$point_id, .keep_all = TRUE)
+        x <- left_join(x, rpx, by = c("match_id", "point_id"))
+    }
     if (!"receiving_setter_position" %in% names(x)) {
         x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team %eq% .data$home_team ~ .data$home_setter_position,
                                                              .data$receiving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
