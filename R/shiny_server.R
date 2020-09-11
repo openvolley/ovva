@@ -520,7 +520,12 @@ ovva_shiny_server <- function(app_data) {
                     ##    meta_video$video_src <- meta_video$file ## full (local) path
                 } else if (is.function(app_data$video_serve_method)) {
                     if (nrow(meta_video) > 0) {
-                        meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), FUN.VALUE = "", USE.NAMES = FALSE)
+                        shiny::withProgress(message = "Processing video files", {
+                            meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) {
+                                shiny::setProgress(value = z/nrow(meta_video))
+                                app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z])
+                            }, FUN.VALUE = "", USE.NAMES = FALSE)
+                        })
                     } else {
                         meta_video$video_src <- character()
                     }
@@ -568,6 +573,7 @@ ovva_shiny_server <- function(app_data) {
                 } else {
                     pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
                 }
+                pl <- pl[!is.na(pl$start_offset) & !is.na(pl$duration), ] ## doesn't help?
                 ## also keep track of actual file paths
                 left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
             }
