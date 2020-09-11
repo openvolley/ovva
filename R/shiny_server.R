@@ -477,10 +477,12 @@ ovva_shiny_server <- function(app_data) {
 
         selected_matches <- reactive({
             if (trace_execution) cat("recalculating selected matches\n")
-            if (is.null(meta())) {
+            if (is.null(input$game_table_dropdown) || is.null(pbp()) || nrow(pbp()) < 1) {
                 NULL
             } else {
-                unique(na.omit(unlist(lapply(meta(), function(z) z$match_id))))
+                datatble <- dplyr::select(distinct(pbp(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team), "match_id", "game_date", "visiting_team", "home_team")
+                datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
+                unique(na.omit(datatble$match_id[datatble$display_ID %in% input$game_table_dropdown]))
             }
         })
 
