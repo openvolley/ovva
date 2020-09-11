@@ -46,7 +46,7 @@ ovva_shiny_server <- function(app_data) {
         observe({
             chc <- season_choices()
             isolate(sel <- input$season)
-            if (!sel %in% chc) sel <- chc[1]
+            if (is.null(sel) || !sel %in% chc) sel <- chc[1]
             updateSelectInput(session, "season", choices = chc, selected = sel)
         })
         ## play-by-play data for selected season
@@ -155,7 +155,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Team
         team_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
@@ -170,7 +170,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Player ID
         player_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
@@ -185,7 +185,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Skill
         skill_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
@@ -245,7 +245,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Skilltype
         skilltype_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
@@ -259,7 +259,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Phase
         phase_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
@@ -274,7 +274,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Advanced filter
         adFilter_list = reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 temp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
@@ -296,7 +296,7 @@ ovva_shiny_server <- function(app_data) {
             col_to_select <- input$adFilter_list
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
-            if (is.null(pbp_augment()) || length(col_to_select) < 1) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
@@ -321,7 +321,7 @@ ovva_shiny_server <- function(app_data) {
             col_to_select <- input$adFilterB_list
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
-            if (is.null(pbp_augment()) || length(col_to_select) < 1) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
@@ -338,7 +338,7 @@ ovva_shiny_server <- function(app_data) {
         observeEvent(input$help, rintrojs::introjs(session, options = list("nextLabel" = "Next", "prevLabel" = "Previous", "skipLabel" = "Skip")))
 
         game_table_dropdown <- reactive({
-            if (is.null(pbp_augment())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 output$no_game_data <- renderUI(
                     if (is.null(input$season)) {
                         tags$div(class = "alert alert-info", "No competition data sets. Log in?")
@@ -374,7 +374,7 @@ ovva_shiny_server <- function(app_data) {
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
         playstable_data <- reactive({
             ## Customize pbp
-            if (is.null(pbp_augment()) || is.null(selected_game_id()) || is.null(meta())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_game_id()) || is.null(meta())) {
                 NULL
             } else {
                 if (trace_execution) cat("recalculating playstable_data\n")
@@ -436,7 +436,6 @@ ovva_shiny_server <- function(app_data) {
         playstable_proxy <- DT::dataTableProxy("playstable", deferUntilFlush = TRUE)
         master_playstable_selected_row <- -99L ## non-reactive
         playstable_select_row <- function(rw) {
-            ##if (!is.null(rw) && !is.na(rw) && (is.null(input$playstable_rows_selected) || rw != input$playstable_rows_selected)) {
             if (!is.null(rw) && !is.na(rw) && (rw != master_playstable_selected_row)) {
                 master_playstable_selected_row <<- rw
                 DT::selectRows(playstable_proxy, rw)
@@ -454,15 +453,20 @@ ovva_shiny_server <- function(app_data) {
         }
         ## when player changes item, it triggers input$playstable_current_item via the video_onstart() function. Update the selected row in the playstable
         observeEvent(input$playstable_current_item, {
-            if (!is.null(input$playstable_current_item)) {
-                ## input$playstable_current_item is 0-based
-                isolate(np <- nrow(playlist()))
-                if (input$playstable_current_item < np) {
-                    playstable_select_row(input$playstable_current_item+1)
-                } else {
-                    ## reached the end of the playlist
-                    master_playstable_selected_row <<- -99L
-                }
+            if (!is.null(input$playstable_current_item) && !is.null(playlist())) {
+                try({
+                    ## input$playstable_current_item is 0-based
+                    isolate(np <- nrow(playlist()))
+                    if (np < 1) {
+                        ## empty table
+                        master_playstable_selected_row <<- -99L
+                    } else if (input$playstable_current_item < np) {
+                        playstable_select_row(input$playstable_current_item+1)
+                    } else {
+                        ## reached the end of the playlist
+                        master_playstable_selected_row <<- -99L
+                    }
+                })
             }
         })
         ## when the user chooses a row in the playstable, it will be selected by that click action, so we just need to play it
@@ -487,7 +491,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         video_meta <- reactive({
-            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id()) || is.null(selected_matches())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(selected_matches())) {
                 NULL
             } else {
                 if (trace_execution) cat("recalculating video_meta\n")
@@ -553,7 +557,7 @@ ovva_shiny_server <- function(app_data) {
         playlist <- reactive({
             ## Customize pbp
             meta_video <- video_meta()
-            if (is.null(pbp_augment()) || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
                 if (trace_execution) cat("recalculating playlist\n")
@@ -607,13 +611,13 @@ ovva_shiny_server <- function(app_data) {
                 def
             }, error = function(e) ovideo::ov_video_timing_df())
         })
-        tweak_all_timings <- function(which, by) {
-            if (which %in% c("start_offset", "duration") && is.numeric(by)) {
+        tweak_all_timings <- function(whch, by) {
+            if (whch %in% c("start_offset", "duration") && is.numeric(by)) {
                 def <- data.frame(skill = c("serve", "reception", "set", "set", "attack", "attack", "block", "block", "dig", "freeball", "freeball"),
                                   phase = c("serve", "reception", "reception", "transition", "reception", "transition", "reception", "transition", "transition", "reception", "transition"),
                                   stringsAsFactors = FALSE)
                 for (ri in seq_len(nrow(def))) {
-                    thisid <- paste0("timing_", def$skill[ri], "_", def$phase[ri], "_", which)
+                    thisid <- paste0("timing_", def$skill[ri], "_", def$phase[ri], "_", whch)
                     updateNumericInput(session, inputId = thisid, value = input[[thisid]] + by)
                 }
             }
@@ -626,7 +630,7 @@ ovva_shiny_server <- function(app_data) {
         ## video stuff
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         observe({
-            if (!is.null(playlist())) {
+            if (!is.null(playlist()) && nrow(playlist()) > 0) {
                 ## when playlist() changes, push it through to the javascript playlist
                 if (video_player_type() == "local") {
                     js_hide("dvyt_player")
@@ -662,7 +666,7 @@ ovva_shiny_server <- function(app_data) {
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
-            if (is.null(playlist())) {
+            if (is.null(playlist()) && nrow(playlist()) > 0) {
                 NULL
             } else {
                 actionButton("create_clip_button", "Download clip")
