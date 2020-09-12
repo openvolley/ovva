@@ -527,17 +527,16 @@ ovva_shiny_server <- function(app_data) {
                 } else if (is.function(app_data$video_serve_method)) {
                     if (nrow(meta_video) > 0) {
                         ## block user interaction while this happens
-                        blockingfun <- function(meta_video) {
-                            showModal(modalDialog(title = "Please wait", size = "l", footer = NULL))
-                            on.exit(removeModal())
+                        showModal(modalDialog(title = "Please wait", size = "l", footer = NULL))
+                        meta_video$video_src <- tryCatch({
                             shiny::withProgress(message = "Processing video files", {
                                 vapply(seq_len(nrow(meta_video)), function(z) {
                                     shiny::setProgress(value = z/nrow(meta_video))
                                     app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z])
                                 }, FUN.VALUE = "", USE.NAMES = FALSE)
                             })
-                        }
-                        meta_video$video_src <- blockingfun(meta_video)
+                        }, error = function(e) character())
+                        removeModal()
                     } else {
                         meta_video$video_src <- character()
                     }
