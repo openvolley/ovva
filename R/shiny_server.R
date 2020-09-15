@@ -22,7 +22,8 @@ ovva_shiny_server <- function(app_data) {
             "Receiving team" = "receiving_team", "Serving team" = "serving_team", ##"game_date",
             "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
-            "Receiving player" = "receiving_player", "Reception grade" = "reception_grade")
+            "Receiving player" = "receiving_player", "Reception grade" = "reception_grade",
+            Setter = "setter", "Opposition setter" = "opposition_setter")
         ## helper function: get the right function from the playlist handler for a given skill and specific
         have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {

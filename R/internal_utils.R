@@ -32,6 +32,29 @@ preprocess_data <- function(x) {
         rpx <- distinct(rpx, .data$match_id, .data$point_id, .keep_all = TRUE)
         x <- left_join(x, rpx, by = c("match_id", "point_id"))
     }
+    if (!all(c("setter", "opposition_setter") %in% names(x))) {
+        x <- x[, setdiff(names(x), c("setter", "opposition_setter"))]
+        x <- mutate(x, home_setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
+                                                  .data$home_setter_position == 2 ~ .data$home_player_id2,
+                                                  .data$home_setter_position == 3 ~ .data$home_player_id3,
+                                                  .data$home_setter_position == 4 ~ .data$home_player_id4,
+                                                  .data$home_setter_position == 5 ~ .data$home_player_id5,
+                                                  .data$home_setter_position == 6 ~ .data$home_player_id6),
+                    visiting_setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
+                                                   .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
+                                                   .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
+                                                   .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
+                                                   .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
+                                                   .data$visiting_setter_position == 6 ~ .data$visiting_player_id6))
+        x <- mutate(x, setter_id = case_when(.data$team %eq% .data$home_team ~ .data$home_setter_id,
+                                             .data$team %eq% .data$visiting_team ~ .data$visiting_setter_id),
+                    opposition_setter_id = case_when(.data$team %eq% .data$visiting_team ~ .data$home_setter_id,
+                                                     .data$team %eq% .data$home_team ~ .data$visiting_setter_id))
+        px <- na.omit(distinct(x[, c("player_id", "player_name")]))
+        px <- px[!px$player_id %in% px$player_id[duplicated(px$player_id)], ]
+        x <- left_join(x, dplyr::rename(px, setter = "player_name"), by = c(setter_id = "player_id"))
+        x <- left_join(x, dplyr::rename(px, opposition_setter = "player_name"), by = c(opposition_setter_id = "player_id"))
+    }
     if (!"receiving_setter_position" %in% names(x)) {
         x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team %eq% .data$home_team ~ .data$home_setter_position,
                                                              .data$receiving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
