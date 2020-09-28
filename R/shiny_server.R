@@ -391,7 +391,7 @@ ovva_shiny_server <- function(app_data) {
                 filterB_var <- input$adFilterB_list
                 playlist_select <- input$playlist_list
                 highlight_select <- input$highlight_list
-                if (!is.null(playlist_select) & !is.null(skill_select) & !is.null(game_select) & !is.null(player_select) & !is.null(team_select)) {
+                if (!is.null(playlist_select) && !is.null(skill_select) && !is.null(game_select) && !is.null(player_select) && !is.null(team_select)) {
                     myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
                         ## apply each of myfuns in turn and rbind the results
@@ -410,10 +410,7 @@ ovva_shiny_server <- function(app_data) {
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else {
-                    pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list,
-                                             .data$skill %in% input$skill_list,
-                                             .data$team %in% input$team_list,
-                                             .data$game_id %in% selected_game_id())
+                    pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list &.data$skill %in% input$skill_list & .data$team %in% input$team_list & .data$game_id %in% selected_game_id())
                     if (!is.null(input$skilltype_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$skilltype %in% input$skilltype_list)
                     if (!is.null(input$phase_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$phase %in% input$phase_list)
                 }
