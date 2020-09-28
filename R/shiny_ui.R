@@ -30,7 +30,8 @@ $(document).on('shiny:sessioninitialized', function() {
     function vo_doneResizing() {
       Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     }
-});"),
+});
+function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
     tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;}")
 ),
 shiny::wellPanel(

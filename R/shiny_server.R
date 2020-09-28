@@ -1,6 +1,7 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
+        allow_item_deletion <- FALSE
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
@@ -373,9 +374,11 @@ ovva_shiny_server <- function(app_data) {
         })
         
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
-        playstable_data <- reactive({
+        playstable_todel <- reactiveVal(NULL)
+        playstable_data_raw <- reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_game_id()) || is.null(meta())) {
+                playstable_todel(NULL)
                 NULL
             } else {
                 if (trace_execution) cat("recalculating playstable_data\n")
@@ -417,20 +420,52 @@ ovva_shiny_server <- function(app_data) {
                 ## advanced filters apply to all
                 if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% input$adFilterValue_list)
                 if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% input$adFilterBValue_list)
+                playstable_todel(rep(FALSE, nrow(pbp_tmp)))
+                pbp_tmp$ROWID <- seq_len(nrow(pbp_tmp)) ## keep track of original row numbers for deletion
                 pbp_tmp
+            }
+        })
+
+        ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
+        playstable_data <- reactive({
+            ptdel <- playstable_todel()
+            if (allow_item_deletion && !is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
+                playstable_data_raw()[!ptdel, ]
+            } else {
+                playstable_data_raw()
+            }
+        })
+
+        observeEvent(input$del_plitem, {
+            ## when the user clicks a delete icon, mark that row for removal
+            if (!is.null(input$del_plitem) && nzchar(input$del_plitem) && grepl("@", input$del_plitem) && !is.null(playstable_todel())) {
+                plchk <- playstable_todel()
+                temp <- strsplit(substr(input$del_plitem, 4, nchar(input$del_plitem)), "@")[[1]]
+                plchk[as.numeric(temp[1])] <- TRUE
+                playstable_todel(plchk)
             }
         })
 
         output$playstable <- DT::renderDataTable({
             mydat <- playstable_data()
             if (!is.null(mydat)) {
-                DT::datatable(names_first_to_capital(mydat[, plays_cols_to_show, drop = FALSE]), rownames = FALSE,
+                if (allow_item_deletion) {
+                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-minus-circle" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
+                    mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
+                    cnames <- var2fc(names(mydat))
+                    cnames[1] <- ""
+                } else {
+                    mydat <- mydat[, plays_cols_to_show, drop = FALSE]
+                    cnames <- var2fc(names(mydat))
+                }
+                DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"),
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE)) ## no column sorting
             } else {
                 NULL
             }
         })
+
         playstable_proxy <- DT::dataTableProxy("playstable", deferUntilFlush = TRUE)
         master_playstable_selected_row <- -99L ## non-reactive
         playstable_select_row <- function(rw) {
@@ -570,6 +605,7 @@ ovva_shiny_server <- function(app_data) {
                                      subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                      subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
                 event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
+                ## TODO: if we filter items out here because of missing video times (but not filter from the playstable), doesn't the playstable selected row get out of whack with the actual item being played?
                 vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE) | grepl("https?://youtu\\.be", meta_video$video_src, ignore.case = TRUE))) {
                            "youtube"
                        } else {
