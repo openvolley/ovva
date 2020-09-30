@@ -14,7 +14,10 @@ ovva_shiny_ui <- function(app_data) {
                      column(3, offset = 3, tags$div(style = "text-align: center;", "Part of the", tags$br(), tags$img(src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMTAiIGhlaWdodD0iMjEwIj48cGF0aCBkPSJNOTcuODMzIDE4Ny45OTdjLTQuNTUtLjM5Ni0xMi44MTItMS44ODYtMTMuNTgxLTIuNDQ5LS4yNDItLjE3Ny0xLjY5Mi0uNzUzLTMuMjIyLTEuMjgxLTI4LjY5Ni05Ljg5NS0zNS4xNy00NS45ODctMTMuODY4LTc3LjMyMyAyLjY3Mi0zLjkzIDIuNTc5LTQuMTktMS4zOTQtMy45MDYtMTIuNjQxLjktMjcuMiA2Ljk1Mi0zMy4wNjYgMTMuNzQ1LTUuOTg0IDYuOTI3LTcuMzI3IDE0LjUwNy00LjA1MiAyMi44NjIuNzE2IDEuODI2LS45MTgtLjE3LTEuODktMi4zMS03LjM1Mi0xNi4xNzQtOS4xODEtMzguNTYtNC4zMzctNTMuMDc0LjY5MS0yLjA3IDEuNDE1LTMuODY2IDEuNjEtMy45ODkuMTk0LS4xMjMuNzgyLTEuMDUzIDEuMzA3LTIuMDY2IDMuOTQ1LTcuNjE3IDkuNDU4LTEyLjg2MiAxNy44MzktMTYuOTcgMTIuMTcyLTUuOTY4IDI1LjU3NS01LjgyNCA0MS40My40NDUgNi4zMSAyLjQ5NSA4LjgwMiAzLjgwMSAxNi4wNDcgOC40MTMgNC4zNCAyLjc2MiA0LjIxMiAyLjg3NCAzLjU5NC0zLjE3My0yLjgyNi0yNy42ODEtMTYuOTA3LTQyLjE4NS0zNi4wNjgtMzcuMTUxLTQuMjU0IDEuMTE3IDUuMjQtMy4zMzggMTEuNjYtNS40NzMgMTMuMTgtNC4zOCAzOC45MzctNS43NzIgNDYuMDc0LTEuNDg4IDEuMjQ3LjU0NyAyLjIyOCAxLjA5NSAzLjI3NSAxLjYzIDQuMjkgMi4xMDcgMTEuNzMzIDcuNjk4IDE0LjI2NSAxMS40MjcuNDA3LjYgMS4yNyAxLjg2NiAxLjkxNyAyLjgxNCAxMS4zMDggMTYuNTY1IDguNjIzIDQxLjkxLTYuODM4IDY0LjU1Mi0zLjI0OSA0Ljc1OC0zLjI1OCA0Ljc0MiAyLjQ1IDQuMDE4IDMyLjQ4Mi00LjEyMiA0OC41MTUtMjEuOTM1IDM5LjU3OC00My45NzQtMS4xNC0yLjgwOSAxLjU2NiAxLjA2IDMuNTE4IDUuMDMyIDI5LjY5MyA2MC40MTctMjIuNTggMTA3Ljg1My03OS40OTggNzIuMTQzLTUuMDg0LTMuMTktNS4xMjMtMy4xNTItMy45MDIgMy44ODMgNC43MjEgMjcuMjIgMjUuNzgzIDQzLjU2MiA0NC4wODkgMzQuMjEgMS4zNjItLjY5NiAyLjIxLS43NSAyLjIxLS4xNDMtNi43NiAzLjg1Ny0xNi4wMTggNi41NTMtMjMuMTI2IDguMDkxLTcuNTU1IDEuNTQ3LTE4LjM2NiAyLjE3Mi0yNi4wMiAxLjUwNnoiIGZpbGw9IiMwMDA3NjYiLz48ZWxsaXBzZSBjeD0iMTA1Ljk3NSIgY3k9IjEwNC40NDEiIHJ4PSI5NC44NCIgcnk9IjkyLjU0MiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwNzY2IiBzdHJva2Utd2lkdGg9IjEwLjc0Ii8+PC9zdmc+", style = "max-height:3em;"), tags$br(), tags$a(href = "https://github.com/openvolley", "openvolley", target = "_blank"), "project")))
         },
         tags$hr(),
-        ovva_shiny_ui_main(),
+        tabsetPanel(
+        tabPanel("Skills and rallies analysis",ovva_shiny_ui_main()),
+        tabPanel("Side-by-side analysis",ovva_shiny_ui_sidebyside())
+        )
     )
 }
 
@@ -148,3 +151,149 @@ tags$style("video.loading { background: black; }"),
 tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; if (dvjs_video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
 )
 }
+
+
+ovva_shiny_ui_sidebyside <- function() {
+    tagList(
+        ## js to track size of video element
+        tags$head(tags$script("var vo_rsztmr;
+                              $(document).on('shiny:sessioninitialized', function() {
+                              Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+                              $(window).resize(function() {
+                              clearTimeout(vo_rsztmr);
+                              vo_rsztmr = setTimeout(vo_doneResizing, 500); });
+                              function vo_doneResizing() {
+                              Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
+                              }
+                              });
+                              function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
+                  tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;}")
+        ),
+        shiny::wellPanel(
+            fluidRow(column(6, tags$h5("1. Select 1st clip"),
+                            fluidRow(
+                                column(5, selectInput("season_sbs1", label = "Data set", choices = NULL),
+                                       pickerInput(inputId = "game_table_dropdown_sbs1", label = "Games", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       uiOutput("no_game_data_sbs1"), uiOutput("processing_note_sbs1"), 
+                                       pickerInput(inputId = "team_list_sbs1", label = "Team", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE)),
+                                column(5, pickerInput(inputId = "player_list_sbs1", label = "Player name", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       pickerInput(inputId = "skill_list_sbs1", label = "Skill", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       uiOutput("custom_filters_ui_sbs1"),
+                                       tags$h5("Extra filters", actionButton("collapse_filter2_sbs1", label = "Show", class = "showhide")),
+                                       tags$div(id = "filter2_panel_sbs1", style = "display: none;", ## start hidden
+                                                fluidRow(tabsetPanel(
+                                                    tabPanel("Filter-based",
+                                                             column(6, pickerInput(inputId = "skilltype_list_sbs1", label = "Skill type", choices = NULL, selected = NULL, options = list(`actions-box` = TRUE), multiple = TRUE)),
+                                                             column(6, pickerInput(inputId = "phase_list_sbs1", label = "Phase", choices = NULL, selected = NULL, options = list(`actions-box` = TRUE), multiple = TRUE))),
+                                                    tabPanel("Playlist-based", uiOutput("playlist_based_ui_sbs1")),
+                                                    tabPanel("Highlights", uiOutput("highlight_based_ui_sbs1"))
+                                                )),
+                                                tags$div(style = "border: 1px dashed black; padding: 8px; margin-bottom: 20px;",
+                                                         tags$h5("Advanced filter"),
+                                                         fluidRow(
+                                                             column(6,introbox_or_div(selectizeInput(inputId = "adFilter_list_sbs1",
+                                                                                                     label = "Advanced filter",
+                                                                                                     choices = NULL,
+                                                                                                     multiple = FALSE),
+                                                                                      data.step = 7, data.intro = "Filter")),
+                                                             column(6, introbox_or_div(pickerInput(inputId = "adFilterValue_list_sbs1",
+                                                                                                   label = "Advanced filter value",
+                                                                                                   choices = NULL,
+                                                                                                   selected = NULL,
+                                                                                                   options = list(`actions-box` = TRUE),
+                                                                                                   multiple = TRUE),
+                                                                                       data.step = 8, data.intro = "Filter value"))),
+                                                         fluidRow(column(6, introbox_or_div(selectizeInput(inputId = "adFilterB_list_sbs1",
+                                                                                                           label = "2nd advanced filter",
+                                                                                                           choices = NULL,
+                                                                                                           multiple = FALSE),
+                                                                                            data.step = 9, data.intro = "2nd Filter")),
+                                                                  column(6, introbox_or_div(pickerInput(inputId = "adFilterBValue_list_sbs1",
+                                                                                                        label = "2nd advanced filter value",
+                                                                                                        choices = NULL,
+                                                                                                        selected = NULL,
+                                                                                                        options = list(`actions-box` = TRUE),
+                                                                                                        multiple = TRUE),
+                                                                                            data.step = 10, data.intro = "2nd Filter value")))
+                                                )
+                                       )
+                                )
+                            )
+            ),
+                     column(6, tags$h5("2. Select 2nd clip"),
+                            fluidRow(
+                                column(5, selectInput("season_sbs2", label = "Data set", choices = NULL),
+                                       pickerInput(inputId = "game_table_dropdown_sbs2", label = "Games", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       uiOutput("no_game_data_sbs2"), uiOutput("processing_note_sbs2"), 
+                                       pickerInput(inputId = "team_list_sbs2", label = "Team", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE)),
+                                column(5, pickerInput(inputId = "player_list_sbs2", label = "Player name", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       pickerInput(inputId = "skill_list_sbs2", label = "Skill", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
+                                       uiOutput("custom_filters_ui_sbs2"),
+                                       tags$h5("Extra filters", actionButton("collapse_filter2_sbs2", label = "Show", class = "showhide")),
+                                       tags$div(id = "filter2_panel_sbs2", style = "display: none;", ## start hidden
+                                                fluidRow(tabsetPanel(
+                                                    tabPanel("Filter-based",
+                                                             column(6, pickerInput(inputId = "skilltype_list_sbs2", label = "Skill type", choices = NULL, selected = NULL, options = list(`actions-box` = TRUE), multiple = TRUE)),
+                                                             column(6, pickerInput(inputId = "phase_list_sbs2", label = "Phase", choices = NULL, selected = NULL, options = list(`actions-box` = TRUE), multiple = TRUE))),
+                                                    tabPanel("Playlist-based", uiOutput("playlist_based_ui_sbs2")),
+                                                    tabPanel("Highlights", uiOutput("highlight_based_ui_sbs2"))
+                                                )),
+                                                tags$div(style = "border: 1px dashed black; padding: 8px; margin-bottom: 20px;",
+                                                         tags$h5("Advanced filter"),
+                                                         fluidRow(
+                                                             column(6,introbox_or_div(selectizeInput(inputId = "adFilter_list_sbs2",
+                                                                                                     label = "Advanced filter",
+                                                                                                     choices = NULL,
+                                                                                                     multiple = FALSE),
+                                                                                      data.step = 7, data.intro = "Filter")),
+                                                             column(6, introbox_or_div(pickerInput(inputId = "adFilterValue_list_sbs2",
+                                                                                                   label = "Advanced filter value",
+                                                                                                   choices = NULL,
+                                                                                                   selected = NULL,
+                                                                                                   options = list(`actions-box` = TRUE),
+                                                                                                   multiple = TRUE),
+                                                                                       data.step = 8, data.intro = "Filter value"))),
+                                                         fluidRow(column(6, introbox_or_div(selectizeInput(inputId = "adFilterB_list_sbs2",
+                                                                                                           label = "2nd advanced filter",
+                                                                                                           choices = NULL,
+                                                                                                           multiple = FALSE),
+                                                                                            data.step = 9, data.intro = "2nd Filter")),
+                                                                  column(6, introbox_or_div(pickerInput(inputId = "adFilterBValue_list_sbs2",
+                                                                                                        label = "2nd advanced filter value",
+                                                                                                        choices = NULL,
+                                                                                                        selected = NULL,
+                                                                                                        options = list(`actions-box` = TRUE),
+                                                                                                        multiple = TRUE),
+                                                                                            data.step = 10, data.intro = "2nd Filter value")))
+                                                )
+                                       )
+                                )
+                            )
+                     )),
+        ),
+        tags$hr(),
+        fluidRow(column(5, tags$div(id = "video_holder_sbs1",
+                                    ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
+                                    ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
+                        uiOutput("player_controls_ui_sbs1", style = "margin-top: 12px;"),
+                        uiOutput("video_dialog_sbs1"),
+                        DT::dataTableOutput("playstable_sbs1")
+        ),
+        column(2,sliderInput("time_offset_sbs1", "Clip 1 time offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1),
+               sliderInput("playback_rate_sbs12", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1),
+               sliderInput("start_offset", "Clips start offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1),
+               sliderInput("time_offset_sbs2", "Clip 2 time offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1)),
+        column(5, tags$div(id = "video_holder_sbs2",
+                           ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
+                           ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
+               uiOutput("player_controls_ui_sbs2", style = "margin-top: 12px;"),
+               uiOutput("video_dialog_sbs2"),
+               DT::dataTableOutput("playstable_sbs2")
+        )),
+        tags$hr(),
+        tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
+        tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
+        tags$style("video.loading { background: black; }"),
+        tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; if (dvjs_video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+    )
+                  }

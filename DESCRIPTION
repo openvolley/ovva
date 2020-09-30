@@ -31,4 +31,4 @@ Suggests:
     rintrojs,
     testthat
 Remotes: openvolley/datavolley, openvolley/ovideo, openvolley/peranavolley
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
