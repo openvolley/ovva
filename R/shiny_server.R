@@ -152,6 +152,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID
         selected_game_id <- reactive({
+            if (trace_execution) message("recalculating game_table")
             if (is.null(input$game_table_dropdown)) {
                 NULL
             } else {
@@ -163,6 +164,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Team
         team_list = reactive({
+            if (trace_execution) message("recalculating team_list")
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
@@ -178,6 +180,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Player ID
         player_list = reactive({
+            if (trace_execution) message("recalculating player_list")
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
@@ -193,6 +196,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Skill
         skill_list = reactive({
+            if (trace_execution) message("recalculating skill_list")
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
@@ -436,7 +440,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
         deltrigger <- reactiveVal(0)
-        playstable_data <- reactive({
+        playstable_data <- debounce(reactive({
             blah <- deltrigger() ## react to this
             ptdel <- playstable_to_delete
             if (allow_item_deletion && !is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
@@ -444,7 +448,7 @@ ovva_shiny_server <- function(app_data) {
             } else {
                 playstable_data_raw()
             }
-        })
+        }), 500)
 
         observeEvent(input$del_plitem, {
             ## when the user clicks a delete icon, mark that row for removal
@@ -462,7 +466,7 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             if (!is.null(mydat)) {
                 if (allow_item_deletion) {
-                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />')) ##event.stopPropagation();
+                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
                     mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
                     cnames <- var2fc(names(mydat))
                     cnames[1] <- ""
