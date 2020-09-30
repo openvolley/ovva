@@ -735,10 +735,10 @@ ovva_shiny_server <- function(app_data) {
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
-            if (is.null(playlist()) && nrow(playlist()) > 0) {
-                NULL
-            } else {
+            if (!is.null(playlist()) && nrow(playlist()) > 0) {
                 actionButton("create_clip_button", "Download clip")
+            } else {
+                NULL
             }
         })
         observeEvent(input$create_clip_button, {
