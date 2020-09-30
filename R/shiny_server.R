@@ -25,8 +25,12 @@ ovva_shiny_server <- function(app_data) {
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
             "Receiving player" = "receiving_player", "Reception grade" = "reception_grade",
             Setter = "setter", "Opposition setter" = "opposition_setter")
+
+        ## some inits
+        master_playstable_selected_row <- -99L ## non-reactive
+        is_fresh_playlist <- FALSE
+
         ## helper function: get the right function from the playlist handler for a given skill and specific
-        have_done_startup <- reactiveVal(FALSE)
         funs_from_playlist <- function(specific) {
             ## return a list of functions
             app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
@@ -35,6 +39,8 @@ ovva_shiny_server <- function(app_data) {
             ## return a list of functions
             app_data$highlight_handler$fun[which(app_data$highlight_handler$specific %in% specific)]
         }
+
+        have_done_startup <- reactiveVal(FALSE)
 
         get_data_paths <- reactive({
             if (is.function(app_data$data_path)) {
@@ -58,7 +64,7 @@ ovva_shiny_server <- function(app_data) {
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
-                if (trace_execution) cat("recalculating meta\n")
+                if (trace_execution) message("recalculating meta")
                 showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
                 if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                     ## use allmeta.rds if available
@@ -374,14 +380,14 @@ ovva_shiny_server <- function(app_data) {
         })
         
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
-        playstable_todel <- reactiveVal(NULL)
+        playstable_to_delete <- NULL
         playstable_data_raw <- reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_game_id()) || is.null(meta())) {
-                playstable_todel(NULL)
+                playstable_to_delete <<- NULL
                 NULL
             } else {
-                if (trace_execution) cat("recalculating playstable_data\n")
+                if (trace_execution) message("recalculating playstable_data")
                 pbp <- pbp_augment()
                 meta <- meta()
                 game_select <- selected_game_id()
@@ -420,15 +426,19 @@ ovva_shiny_server <- function(app_data) {
                 ## advanced filters apply to all
                 if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% input$adFilterValue_list)
                 if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% input$adFilterBValue_list)
-                playstable_todel(rep(FALSE, nrow(pbp_tmp)))
+                playstable_to_delete <<- rep(FALSE, nrow(pbp_tmp))
                 pbp_tmp$ROWID <- seq_len(nrow(pbp_tmp)) ## keep track of original row numbers for deletion
+                master_playstable_selected_row <<- 1 ## fresh table/playlist, start from row 1
+                is_fresh_playlist <<- TRUE
                 pbp_tmp
             }
         })
 
         ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
+        deltrigger <- reactiveVal(0)
         playstable_data <- reactive({
-            ptdel <- playstable_todel()
+            blah <- deltrigger() ## react to this
+            ptdel <- playstable_to_delete
             if (allow_item_deletion && !is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
                 playstable_data_raw()[!ptdel, ]
             } else {
@@ -438,11 +448,13 @@ ovva_shiny_server <- function(app_data) {
 
         observeEvent(input$del_plitem, {
             ## when the user clicks a delete icon, mark that row for removal
-            if (!is.null(input$del_plitem) && nzchar(input$del_plitem) && grepl("@", input$del_plitem) && !is.null(playstable_todel())) {
-                plchk <- playstable_todel()
+            if (!is.null(input$del_plitem) && nzchar(input$del_plitem) && grepl("@", input$del_plitem) && !is.null(playstable_to_delete)) {
+                plchk <- playstable_to_delete
                 temp <- strsplit(substr(input$del_plitem, 4, nchar(input$del_plitem)), "@")[[1]]
                 plchk[as.numeric(temp[1])] <- TRUE
-                playstable_todel(plchk)
+                playstable_to_delete <<- plchk
+                is_fresh_playlist <<- FALSE
+                deltrigger(deltrigger() + 1L)
             }
         })
 
@@ -450,7 +462,7 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             if (!is.null(mydat)) {
                 if (allow_item_deletion) {
-                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-minus-circle" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
+                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />')) ##event.stopPropagation();
                     mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
                     cnames <- var2fc(names(mydat))
                     cnames[1] <- ""
@@ -458,16 +470,18 @@ ovva_shiny_server <- function(app_data) {
                     mydat <- mydat[, plays_cols_to_show, drop = FALSE]
                     cnames <- var2fc(names(mydat))
                 }
+                if (trace_execution) message("redrawing playstable, master_selected is: ", master_playstable_selected_row)
+                ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
-                              extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"),
-                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE)) ## no column sorting
+                              extensions = "Scroller", selection = list(mode = "single", selected = max(master_playstable_selected_row, 1L), target = "row"),
+                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE,
+                                             initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
             } else {
                 NULL
             }
         })
 
         playstable_proxy <- DT::dataTableProxy("playstable", deferUntilFlush = TRUE)
-        master_playstable_selected_row <- -99L ## non-reactive
         playstable_select_row <- function(rw) {
             if (!is.null(rw) && !is.na(rw) && (rw != master_playstable_selected_row)) {
                 master_playstable_selected_row <<- rw
@@ -475,6 +489,7 @@ ovva_shiny_server <- function(app_data) {
                 scroll_playstable(rw)
             }
         }
+        observeEvent(input$scroll_trigger, scroll_playstable())
         scroll_playstable <- function(rw = NULL) {
             selr <- if (!is.null(rw)) rw else input$playstable_rows_selected
             if (!is.null(selr)) {
@@ -506,14 +521,24 @@ ovva_shiny_server <- function(app_data) {
         ## use input$playstable_cell_clicked rather than input$playstable_rows_selected to detect user input, because the latter is also triggered by the player incrementing rows
         observeEvent(input$playstable_cell_clicked, { ## note, can't click the same row twice in a row ...
             clicked_row <- input$playstable_cell_clicked$row ## 1-based
-            if (!is.null(clicked_row) && !is.na(clicked_row) && clicked_row != master_playstable_selected_row) { ## TODO take this last condition out?
-                master_playstable_selected_row <<- clicked_row
-                evaljs(paste0("dvjs_video_controller.current=", clicked_row-1, "; dvjs_video_play();"))
+            if (!is.null(clicked_row) && !is.na(clicked_row)) {
+                if (!allow_item_deletion || isTRUE(input$playstable_cell_clicked$col > 0)) {
+                    master_playstable_selected_row <<- clicked_row
+                    evaljs(paste0("dvjs_video_controller.current=", clicked_row-1, "; dvjs_video_play();"))
+                } else {
+                    ## deleted a row
+                    ## if it was on or before the current selected row, then subtract one off the master_playstable_selected_row to keep it in sync
+                    if (clicked_row <= master_playstable_selected_row) {
+                        master_playstable_selected_row <<- master_playstable_selected_row-1
+                    }
+                    evaljs(paste0("dvjs_video_controller.current=", master_playstable_selected_row-1, ";"))
+
+                }
             }
         })
 
         selected_matches <- reactive({
-            if (trace_execution) cat("recalculating selected matches\n")
+            if (trace_execution) message("recalculating selected matches")
             if (is.null(input$game_table_dropdown) || is.null(pbp()) || nrow(pbp()) < 1) {
                 NULL
             } else {
@@ -527,7 +552,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(selected_matches())) {
                 NULL
             } else {
-                if (trace_execution) cat("recalculating video_meta\n")
+                if (trace_execution) message("recalculating video_meta")
                 meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_matches())
                 if (nrow(meta_video) < 1) return(NULL)
@@ -598,7 +623,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
-                if (trace_execution) cat("recalculating playlist\n")
+                if (trace_execution) message("recalculating playlist")
                 event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
                                      skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                            .data$skill == "Attack" ~ .data$attack_description),
@@ -671,6 +696,7 @@ ovva_shiny_server <- function(app_data) {
         observe({
             if (!is.null(playlist()) && nrow(playlist()) > 0) {
                 ## when playlist() changes, push it through to the javascript playlist
+                isolate(waspaused <- isTRUE(input$player_pause_state))
                 if (video_player_type() == "local") {
                     js_hide("dvyt_player")
                     js_show("dv_player")
@@ -679,7 +705,16 @@ ovva_shiny_server <- function(app_data) {
                     js_show("dvyt_player")
                 }
                 ov_video_control("stop")
-                evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
+                if (is_fresh_playlist) {
+                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
+                } else {
+                    ## should only be here if the playlist was modified but playstable was NOT (i.e. we deleted an item from the playlist)
+                    ## so if we are mid-playlist already, do some other shenanigans so as not to restart from the first playlist item
+                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist", seamless = TRUE)) ## set the playlist but don't auto-start playing (which would start from item 1)
+                    evaljs(paste0("dvjs_video_controller.current=", master_playstable_selected_row - 1, ";")) ## set the current item
+                    ## if we were paused, don't restart but set the player state to paused since it got reset when the new playlist was loaded
+                    if (!waspaused) evaljs("dvjs_video_play();") else evaljs("dvjs_video_controller.paused=true;")
+                }
             } else {
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvjs_clear_playlist();")
@@ -688,18 +723,13 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         output$player_controls_ui <- renderUI({
-            ##if (is.null(playlist()) || app_data$video_serve_method == "standalone") {
-            ##    NULL
-            ##} else {
-                tags$div(tags$button("Play", onclick = "dvjs_video_play();"),
-                         tags$button("Prev", onclick = "dvjs_video_prev();"),
-                         tags$button("Next", onclick = "dvjs_video_next(false);"),
-                         tags$button("Pause", onclick = "dvjs_video_pause();"),
-                         tags$button("Back 1s", onclick = "dvjs_jog(-1);"),
-                         tags$span(id = "subtitle", "Score"),
-                         tags$span(id = "subtitleskill", "Skill"),
-                         uiOutput("create_clip_button_ui", inline = TRUE))
-            ##}
+            tags$div(tags$div(tags$button("Play", onclick = "dvjs_video_play();"),
+                              tags$button("Prev", onclick = "dvjs_video_prev();"),
+                              tags$button("Next", onclick = "dvjs_video_next(false);"),
+                              tags$button("Pause", onclick = "dvjs_video_pause();"),
+                              tags$button("Back 1s", onclick = "dvjs_jog(-1);")),
+                     tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill")),
+                     uiOutput("create_clip_button_ui", inline = TRUE))
         })
 
         clip_filename <- reactiveVal("")
