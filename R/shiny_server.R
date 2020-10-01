@@ -377,15 +377,15 @@ ovva_shiny_server <- function(app_data) {
                 dplyr::pull(dplyr::select(datatble, .data$display_ID))
             }
         })
-        
+
         observe({
             isolate(sel <- intersect(game_table_dropdown(), input$game_table_dropdown))
             updatePickerInput(session, "game_table_dropdown", choices = game_table_dropdown(), selected = sel)
         })
-        
+
         ## Table of all actions as per selected_game_id() and player_id() and evaluation()
         playstable_to_delete <- NULL
-        playstable_data_raw <- reactive({
+        playstable_data_raw <- debounce(reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_game_id()) || is.null(meta())) {
                 playstable_to_delete <<- NULL
@@ -436,7 +436,7 @@ ovva_shiny_server <- function(app_data) {
                 is_fresh_playlist <<- TRUE
                 pbp_tmp
             }
-        })
+        }), 250)
 
         ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
         deltrigger <- reactiveVal(0)
@@ -622,12 +622,12 @@ ovva_shiny_server <- function(app_data) {
         })
 
         playlist <- reactive({
+            if (trace_execution) message("recalculating playlist")
             ## Customize pbp
             meta_video <- video_meta()
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
-                if (trace_execution) message("recalculating playlist")
                 event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
                                      skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                            .data$skill == "Attack" ~ .data$attack_description),
@@ -699,6 +699,7 @@ ovva_shiny_server <- function(app_data) {
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         observe({
             if (!is.null(playlist()) && nrow(playlist()) > 0) {
+                if (trace_execution) message("reinitializing video player")
                 ## when playlist() changes, push it through to the javascript playlist
                 isolate(waspaused <- isTRUE(input$player_pause_state))
                 if (video_player_type() == "local") {
