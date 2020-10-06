@@ -13,8 +13,7 @@ status](https://travis-ci.org/openvolley/ovva.svg?branch=master)](https://travis
 
 ## Installation
 
-You can install from [GitHub](https://github.com/openvolley/ovva)
-with:
+You can install from [GitHub](https://github.com/openvolley/ovva) with:
 
 ``` r
 ## install.packages("remotes") ## if needed
@@ -23,6 +22,39 @@ remotes::install_github("openvolley/ovva")
 
 ## About
 
-This R package provides shiny apps for viewing volleyball match videos in conjunction with scout files.
+This R package provides shiny apps for viewing volleyball match videos
+in conjunction with scout files.
 
-At this stage it is entirely experimental. Beware\!
+At this stage it is largely experimental. Beware\!
+
+## Usage
+
+Start the shiny app with the path to your DataVolley files:
+
+``` r
+library(ovva)
+ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
+```
+
+![](man/figures/ovva-screenshot.png)
+
+### Notes
+
+1.  In order for the app to find the video file associated with each dvw
+    file, the video file path must be present in the dvw file. You can
+    check this by inspecting the dvw file in a text editor — you should
+    see something like:
+
+<!-- end list -->
+
+    [3RESERVE]
+    [3VIDEO]
+    Camera0=D:\video\2019_03_01-KATS-BEDS.mp4
+    [3SCOUT]
+
+2.  The video server runs in a separate thread to the shiny application
+    itself. If the `lighttpd` executable is present on the system path,
+    this will be used for serving videos by default, otherwise the
+    `servr` package will be used. The performance of `lighttpd` is
+    better, so you might want to install this if you don’t already have
+    it: <https://www.lighttpd.net/download/>
