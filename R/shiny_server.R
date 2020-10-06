@@ -561,16 +561,15 @@ ovva_shiny_server <- function(app_data) {
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_matches())
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
-                    ## we are serving the video through the lighttpd server, so need to make symlinks in its document root directory pointing to the actual video files
-                    vf <- fs::path_norm(meta_video$file)
+                    ## we are serving the video through the lighttpd/servr server, so need to make symlinks in its document root directory pointing to the actual video files
+                    vf <- tryCatch(fs::path_real(meta_video$file), error = function(e) NULL)
                     if (is.null(vf) || length(vf) < 1) return(NULL)
                     ## may have multiple video files at this point
                     for (thisf in vf) {
                         if (fs::file_exists(thisf)) {
                             symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, basename(thisf)))
                             suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
-                            thisf <- gsub(" ", "\\\\ " , thisf) ## this may not work on Windows
-                            fs::link_create(thisf, symlink_abspath) ##system2("ln", c("-s", thisf, symlink_abspath))
+                            fs::link_create(thisf, symlink_abspath)
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                         } else if (is_youtube_id(vf) || grepl("https?://", vf, ignore.case = TRUE)) {
@@ -733,8 +732,8 @@ ovva_shiny_server <- function(app_data) {
                               tags$button("Next", onclick = "dvjs_video_next(false);"),
                               tags$button("Pause", onclick = "dvjs_video_pause();"),
                               tags$button("Back 1s", onclick = "dvjs_jog(-1);")),
-                     tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill")),
-                     uiOutput("create_clip_button_ui", inline = TRUE))
+                     tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
+                              uiOutput("create_clip_button_ui", inline = TRUE)))
         })
 
         clip_filename <- reactiveVal("")
