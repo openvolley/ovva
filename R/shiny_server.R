@@ -528,14 +528,14 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(clicked_row) && !is.na(clicked_row)) {
                 if (!allow_item_deletion || isTRUE(input$playstable_cell_clicked$col > 0)) {
                     master_playstable_selected_row <<- clicked_row
-                    evaljs(paste0("dvjs_video_controller.current=", clicked_row-1, "; dvjs_video_play();"))
+                    evaljs(paste0("dvpl.video_controller.current=", clicked_row-1, "; dvpl.video_play();"))
                 } else {
                     ## deleted a row
                     ## if it was on or before the current selected row, then subtract one off the master_playstable_selected_row to keep it in sync
                     if (clicked_row <= master_playstable_selected_row) {
                         master_playstable_selected_row <<- master_playstable_selected_row-1
                     }
-                    evaljs(paste0("dvjs_video_controller.current=", master_playstable_selected_row-1, ";"))
+                    evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row-1, ";"))
 
                 }
             }
@@ -708,30 +708,30 @@ ovva_shiny_server <- function(app_data) {
                     js_hide("dv_player")
                     js_show("dvyt_player")
                 }
-                ov_video_control("stop")
+                ov_video_control("stop", controller_var = "dvpl")
                 if (is_fresh_playlist) {
-                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE))
+                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE, controller_var = "dvpl"))
                 } else {
                     ## should only be here if the playlist was modified but playstable was NOT (i.e. we deleted an item from the playlist)
                     ## so if we are mid-playlist already, do some other shenanigans so as not to restart from the first playlist item
-                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist", seamless = TRUE)) ## set the playlist but don't auto-start playing (which would start from item 1)
-                    evaljs(paste0("dvjs_video_controller.current=", master_playstable_selected_row - 1, ";")) ## set the current item
+                    evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist", seamless = TRUE, controller_var = "dvpl")) ## set the playlist but don't auto-start playing (which would start from item 1)
+                    evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row - 1, ";")) ## set the current item
                     ## if we were paused, don't restart but set the player state to paused since it got reset when the new playlist was loaded
-                    if (!waspaused) evaljs("dvjs_video_play();") else evaljs("dvjs_video_controller.paused=true;")
+                    if (!waspaused) evaljs("dvpl.video_play();") else evaljs("dvpl.video_controller.paused=true;")
                 }
             } else {
                 ## empty playlist, so stop the video, and clean things up
-                evaljs("dvjs_clear_playlist();")
+                evaljs("dvpl.clear_playlist();")
                 ## evaljs("remove_vspinner();") ## doesn't have an effect?
                 evaljs("document.getElementById(\"subtitle\").textContent=\"Score\"; document.getElementById(\"subtitleskill\").textContent=\"Skill\";")
             }
         })
         output$player_controls_ui <- renderUI({
-            tags$div(tags$div(tags$button("Play", onclick = "dvjs_video_play();"),
-                              tags$button("Prev", onclick = "dvjs_video_prev();"),
-                              tags$button("Next", onclick = "dvjs_video_next(false);"),
-                              tags$button("Pause", onclick = "dvjs_video_pause();"),
-                              tags$button("Back 1s", onclick = "dvjs_jog(-1);")),
+            tags$div(tags$div(tags$button("Play", onclick = "dvpl.video_play();"),
+                              tags$button("Prev", onclick = "dvpl.video_prev();"),
+                              tags$button("Next", onclick = "dvpl.video_next(false);"),
+                              tags$button("Pause", onclick = "dvpl.video_pause();"),
+                              tags$button("Back 1s", onclick = "dvpl.jog(-1);")),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))
         })
@@ -746,7 +746,7 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         observeEvent(input$create_clip_button, {
-            ov_video_control("stop")
+            ov_video_control("stop", controller_var = "dvpl")
             showModal(modalDialog(title = "Create and download video clip", size = "l", "Please wait, creating clip. This could take some time.", uiOutput("clip_status_ui")))
             ## TODO - add progress indicator to that somehow? may not be possible with parallel
             ## do the video crunching
@@ -798,7 +798,7 @@ ovva_shiny_server <- function(app_data) {
         )
 
         observeEvent(input$playback_rate, {
-            if (!is.null(input$playback_rate)) ov_video_control("set_playback_rate", input$playback_rate)
+            if (!is.null(input$playback_rate)) ov_video_control("set_playback_rate", input$playback_rate, controller_var = "dvpl")
         })
 
         output$chart_ui <- renderUI(app_data$chart_renderer)
