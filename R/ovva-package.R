@@ -11,7 +11,7 @@
 #' @importFrom methods as
 #' @importFrom ovideo ov_video_control
 #' @importFrom peranavolley pv_read
-#' @importFrom shiny actionButton column fluidPage fluidRow isolate mainPanel modalDialog numericInput observe observeEvent onSessionEnded onStop plotOutput reactive reactiveVal reactiveValues removeModal renderUI renderPlot selectInput selectizeInput showModal sidebarLayout sidebarPanel sliderInput tabPanel tabsetPanel updateActionButton updateNumericInput updateSelectInput uiOutput
+#' @importFrom shiny actionButton column debounce fluidPage fluidRow isolate mainPanel modalDialog numericInput observe observeEvent onSessionEnded onStop plotOutput reactive reactiveVal reactiveValues removeModal renderUI renderPlot selectInput selectizeInput showModal sidebarLayout sidebarPanel sliderInput tabPanel tabsetPanel updateActionButton updateNumericInput updateSelectInput uiOutput
 #' @importFrom shinyWidgets pickerInput updatePickerInput
 #' @importFrom stats na.omit setNames
 NULL

@@ -34,6 +34,7 @@ ovva_video_server <- function(method, port) {
         lighttpd_conf_file <- tempfile(fileext = ".conf")
         cat("server.document-root = \"", video_server_dir, "\"\nserver.port = \"", port, "\"\n", sep = "", file = lighttpd_conf_file, append = FALSE)
         lighttpd_pid <- sys::exec_background("lighttpd", c("-D", "-f", lighttpd_conf_file), std_out = FALSE) ## start lighttpd not in background mode
+        message("Serving the directory ", video_server_dir, " at http://127.0.0.1:", port)
         cleanup_fun <- function() {
             message("cleaning up lighttpd")
             try(tools::pskill(lighttpd_pid), silent = TRUE)

@@ -28,7 +28,7 @@ preprocess_data <- function(x) {
     }
     if (!all(c("receiving_player", "reception_grade") %in% names(x))) {
         x <- x[, setdiff(names(x), c("receiving_player", "reception_grade"))]
-        rpx <- dplyr::select(dplyr::filter(x, skill == "Reception"), "match_id", "point_id", receiving_player = "player_name", reception_grade = "evaluation")
+        rpx <- dplyr::select(dplyr::filter(x, .data$skill == "Reception"), "match_id", "point_id", receiving_player = "player_name", reception_grade = "evaluation")
         rpx <- distinct(rpx, .data$match_id, .data$point_id, .keep_all = TRUE)
         x <- left_join(x, rpx, by = c("match_id", "point_id"))
     }

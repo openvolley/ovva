@@ -1,10 +1,10 @@
 ovva_shiny_ui <- function(app_data) {
     fluidPage(
         if (requireNamespace("rintrojs", quietly = TRUE)) rintrojs::introjsUI(),
-        ovideo::ov_video_js(youtube = TRUE),
+        ovideo::ov_video_js(youtube = TRUE, version = 2),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
-                 tags$style("#headerblock {border-radius:4px; padding:10px; margin-bottom:5px; min-height:120px; color:black;} h5 {font-weight: bold;}"),
+                 tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;}"),
                  if (!is.null(app_data$css)) tags$style(app_data$css)
              ),
         if (!is.null(app_data$ui_header)) {
@@ -148,7 +148,7 @@ tags$table(tags$tr(tags$th(),
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
-tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; if (dvjs_video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { console.log('dvjs_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
 )
 }
 
@@ -273,8 +273,8 @@ ovva_shiny_ui_sidebyside <- function() {
         ),
         tags$hr(),
         fluidRow(column(5, tags$div(id = "video_holder_sbs1",
-                                    ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
-                                    ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
+                                    ovideo::ov_video_player(id = "dv_player_sbs1", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner_sbs1();", oncanplay = "remove_vspinner_sbs1();"),
+                                    ovideo::ov_video_player(id = "dvyt_player_sbs1", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
                         uiOutput("player_controls_ui_sbs1", style = "margin-top: 12px;"),
                         uiOutput("video_dialog_sbs1"),
                         DT::dataTableOutput("playstable_sbs1")
@@ -284,16 +284,17 @@ ovva_shiny_ui_sidebyside <- function() {
                sliderInput("start_offset", "Clips start offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1),
                sliderInput("time_offset_sbs2", "Clip 2 time offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1)),
         column(5, tags$div(id = "video_holder_sbs2",
-                           ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
-                           ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
+                           ovideo::ov_video_player(id = "dv_player_sbs2", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner_sbs2();", oncanplay = "remove_vspinner_sbs2();"),
+                           ovideo::ov_video_player(id = "dvyt_player_sbs2", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
                uiOutput("player_controls_ui_sbs2", style = "margin-top: 12px;"),
                uiOutput("video_dialog_sbs2"),
                DT::dataTableOutput("playstable_sbs2")
         )),
         tags$hr(),
-        tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
-        tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
+        tags$script("set_vspinner_sbs1 = function() { $('#dv_player_sbs1').addClass('loading'); } set_vspinner_sbs2 = function() { $('#dv_player_sbs2').addClass('loading'); }"),
+        tags$script("remove_vspinner_sbs1 = function() { $('#dv_player_sbs1').removeClass('loading'); } remove_vspinner_sbs2 = function() { $('#dv_player_sbs2').removeClass('loading'); }"),
         tags$style("video.loading { background: black; }"),
-        tags$script("function dvjs_video_onstart() { Shiny.setInputValue('playstable_current_item', dvjs_video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvjs_video_controller.queue[dvjs_video_controller.current].subtitleskill; if (dvjs_video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+        tags$script("dvpl_sbs1 = new dvjs_controller('dv_player_sbs1','local',true); dvpl_sbs1.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl_sbs1.video_controller.paused); }; dvpl_sbs1.video_onstart=function() { console.log('dvjs_sbs1_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl_sbs1.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl_sbs1.video_controller.queue[dvpl_sbs1.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl_sbs1.video_controller.queue[dvpl_sbs1.video_controller.current].subtitleskill; if (dvpl_sbs1.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player_sbs1').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player_sbs1').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player_sbs1').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player_sbs1').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }"),
+        tags$script("dvpl_sbs2 = new dvjs_controller('dv_player_sbs2','local',true); dvpl_sbs2.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl_sbs2.video_controller.paused); }; dvpl_sbs2.video_onstart=function() { console.log('dvjs_sbs2_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl_sbs2.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl_sbs2.video_controller.queue[dvpl_sbs2.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl_sbs2.video_controller.queue[dvpl_sbs2.video_controller.current].subtitleskill; if (dvpl_sbs2.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player_sbs2').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player_sbs2').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player_sbs2').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player_sbs2').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
     )
-                  }
+}
