@@ -1605,7 +1605,7 @@ ovva_shiny_server <- function(app_data) {
                 if (!is.null(input$highlight_list_sbs1)) {
                     pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("subtitle", plays_cols_to_show))
                 } else {
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing_sbs1(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
                 }
                 pl <- pl[!is.na(pl$start_time) & !is.na(pl$duration), ]
                 ## also keep track of actual file paths
@@ -1637,7 +1637,7 @@ ovva_shiny_server <- function(app_data) {
                 if (!is.null(input$highlight_list_sbs2)) {
                     pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("subtitle", plays_cols_to_show))
                 } else {
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing_sbs2(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
                 }
                 pl <- pl[!is.na(pl$start_time) & !is.na(pl$duration), ]
                 ## also keep track of actual file paths
@@ -1688,6 +1688,61 @@ ovva_shiny_server <- function(app_data) {
         observeEvent(input$timing_all_duration_minus, tweak_all_timings("duration", -1))
         observeEvent(input$timing_all_duration_plus, tweak_all_timings("duration", 1))
 
+        
+        clip_timing_sbs1 <- reactive({
+            ## parse timing from inputs, with fallback to ov_video_timing_df() if it fails
+            tryCatch({
+                ## defaults
+                def <- ovideo::ov_video_timing_df()
+                ## need to explicitly list all the inputs to get reactivity, ergh
+                blah <- list(input$timing_serve_serve_start_offset, input$timing_serve_serve_duration,
+                             input$timing_reception_reception_start_offset, input$timing_reception_reception_duration,
+                             input$timing_set_reception_start_offset, input$timing_set_reception_duration,
+                             input$timing_set_transition_start_offset, input$timing_set_transition_duration,
+                             input$timing_attack_reception_start_offset, input$timing_attack_reception_duration,
+                             input$timing_attack_transition_start_offset, input$timing_attack_transition_duration,
+                             input$timing_block_reception_start_offset, input$timing_block_reception_duration,
+                             input$timing_block_transition_start_offset, input$timing_block_transition_duration,
+                             input$timing_dig_transition_start_offset, input$timing_dig_transition_duration,
+                             input$timing_freeball_reception_start_offset, input$timing_freeball_reception_duration,
+                             input$timing_freeball_transition_start_offset, input$timing_freeball_transition_duration)
+                for (ri in seq_len(nrow(def))) {
+                    skill <- def$skill[ri]
+                    phase <- def$phase[ri]
+                    def$start_offset[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset")]]
+                    def$duration[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_duration")]]
+                }
+                def
+            }, error = function(e) ovideo::ov_video_timing_df())
+        })
+        
+        clip_timing_sbs2 <- reactive({
+            ## parse timing from inputs, with fallback to ov_video_timing_df() if it fails
+            tryCatch({
+                ## defaults
+                def <- ovideo::ov_video_timing_df()
+                ## need to explicitly list all the inputs to get reactivity, ergh
+                blah <- list(input$timing_serve_serve_start_offset, input$timing_serve_serve_duration,
+                             input$timing_reception_reception_start_offset, input$timing_reception_reception_duration,
+                             input$timing_set_reception_start_offset, input$timing_set_reception_duration,
+                             input$timing_set_transition_start_offset, input$timing_set_transition_duration,
+                             input$timing_attack_reception_start_offset, input$timing_attack_reception_duration,
+                             input$timing_attack_transition_start_offset, input$timing_attack_transition_duration,
+                             input$timing_block_reception_start_offset, input$timing_block_reception_duration,
+                             input$timing_block_transition_start_offset, input$timing_block_transition_duration,
+                             input$timing_dig_transition_start_offset, input$timing_dig_transition_duration,
+                             input$timing_freeball_reception_start_offset, input$timing_freeball_reception_duration,
+                             input$timing_freeball_transition_start_offset, input$timing_freeball_transition_duration)
+                for (ri in seq_len(nrow(def))) {
+                    skill <- def$skill[ri]
+                    phase <- def$phase[ri]
+                    def$start_offset[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset")]]
+                    def$duration[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_duration")]]
+                }
+                def
+            }, error = function(e) ovideo::ov_video_timing_df())
+        })
+        
         ## video stuff
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
         video_player_type_sbs1 <- reactiveVal("local") ## the current player type, either "local" or "youtube"
@@ -1734,7 +1789,7 @@ ovva_shiny_server <- function(app_data) {
                     js_show("dvyt_player_sbs1")
                 }
                 ov_video_control("stop", controller_var = "dvpl_sbs1")
-                evaljs(ovideo::ov_playlist_as_onclick(playlist_sbs1(), video_id = if (video_player_type_sbs1() == "local") "dv_player_sbs1" else "dvyt_player_sbs1", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE, controller_var = "dvpl_sbs1"))
+                evaljs(ovideo::ov_playlist_as_onclick(playlist_sbs1(), video_id = if (video_player_type_sbs1() == "local") "dv_player_sbs1" else "dvyt_player_sbs1", dvjs_fun = "dvjs_set_playlist", seamless = TRUE, controller_var = "dvpl_sbs1"))
             } else {
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvpl_sbs1.clear_playlist();")
@@ -1753,7 +1808,7 @@ ovva_shiny_server <- function(app_data) {
                     js_show("dvyt_player_sbs2")
                 }
                 ov_video_control("stop")
-                evaljs(ovideo::ov_playlist_as_onclick(playlist_sbs2(), video_id = if (video_player_type_sbs2() == "local") "dv_player_sbs2" else "dvyt_player_sbs2", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE, controller_var = "dvpl_sbs2"))
+                evaljs(ovideo::ov_playlist_as_onclick(playlist_sbs2(), video_id = if (video_player_type_sbs2() == "local") "dv_player_sbs2" else "dvyt_player_sbs2", dvjs_fun = "dvjs_set_playlist", seamless = TRUE, controller_var = "dvpl_sbs2"))
             } else {
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvpl_sbs2.clear_playlist();")
@@ -1763,39 +1818,46 @@ ovva_shiny_server <- function(app_data) {
         })
         
         output$player_controls_ui <- renderUI({
-            tags$div(tags$div(tags$button("Play", onclick = "dvpl.video_play();"),
+            tags$div(tags$div(tags$button("Start", onclick = "dvpl.video_play();"),
                               tags$button("Prev", onclick = "dvpl.video_prev();"),
                               tags$button("Next", onclick = "dvpl.video_next(false);"),
-                              tags$button("Pause", onclick = "dvpl.video_pause();"),
+                              tags$button("Play/Pause", onclick = "dvpl.video_pause();"),
                               tags$button("Back 1s", onclick = "dvpl.jog(-1);")),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))
         })
 
+        
         output$player_controls_ui_sbs1 <- renderUI({
-            tags$div(tags$button("Play", onclick = "dvpl_sbs1.video_play();"),
-                     tags$button("Prev", onclick = "dvpl_sbs1.video_prev();"),
-                     tags$button("Next", onclick = "dvpl_sbs1.video_next(false);"),
-                     tags$button("Pause", onclick = "dvpl_sbs1.video_pause();"),
-                     tags$button("Back 1s", onclick = "dvpl_sbs1.jog(-1);"),
-                     tags$span(id = "subtitle_sbs1", "Score"),
-                     tags$span(id = "subtitleskill_sbs1", "Skill")##,
-                     ##uiOutput("create_clip_button_ui_sbs1", inline = TRUE)
-                     )
+            tags$div(tags$div(
+                tags$span(icon("angle-double-left")),
+                tags$button("- 1s", onclick = "dvpl_sbs1.jog(-1);"),
+                tags$button("- 0.1s", onclick = "dvpl_sbs1.jog(-0.1);"),#,
+                tags$button("+ 0.1s", onclick = "dvpl_sbs1.jog(+0.1);"),
+                tags$button("+ 1s", onclick = "dvpl_sbs1.jog(+1);"))
+            )
         })
         
         output$player_controls_ui_sbs2 <- renderUI({
-            tags$div(tags$button("Play", onclick = "dvpl_sbs2.video_play();"),
-                     tags$button("Prev", onclick = "dvpl_sbs2.video_prev();"),
-                     tags$button("Next", onclick = "dvpl_sbs2.video_next(false);"),
-                     tags$button("Pause", onclick = "dvpl_sbs2.video_pause();"),
-                     tags$button("Back 1s", onclick = "dvpl_sbs2.jog(-1);"),
-                     tags$span(id = "subtitle_sbs2", "Score"),
-                     tags$span(id = "subtitleskill_sbs2", "Skill")##,
-                     ##uiOutput("create_clip_button_ui_sbs2", inline = TRUE)
+            tags$div(tags$div(
+                tags$button("- 1s", onclick = "dvpl_sbs2.jog(-1);"),
+                tags$button("- 0.1s", onclick = "dvpl_sbs2.jog(-0.1);"),#,
+                tags$button("+ 0.1s", onclick = "dvpl_sbs2.jog(+0.1);"),
+                tags$button("+ 1s", onclick = "dvpl_sbs2.jog(+1);"),
+                tags$span(icon("angle-double-right")))
+            )
+        })
+        
+        output$player_controls_ui_sbs12 <- renderUI({
+            tags$div(tags$button("Start", onclick = "dvpl_sbs1.video_play();dvpl_sbs2.video_play();"),
+                     tags$button("Play/Pause", onclick = "dvpl_sbs1.video_pause();dvpl_sbs2.video_pause();"),
+                     tags$button("- 1s", onclick = "dvpl_sbs1.jog(-1);dvpl_sbs2.jog(-1);"),
+                     tags$button("+ 1s", onclick = "dvpl_sbs1.jog(+1);dvpl_sbs2.jog(+1);")
+
                      )
         })
         
+
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
@@ -1868,6 +1930,7 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         
+
         output$chart_ui <- renderUI(app_data$chart_renderer)
 
         ## height of the video player element

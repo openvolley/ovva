@@ -269,24 +269,28 @@ ovva_shiny_ui_sidebyside <- function() {
                                        )
                                 )
                             )
-                     )),
+                     ))
         ),
         tags$hr(),
         fluidRow(column(5, tags$div(id = "video_holder_sbs1",
                                     ovideo::ov_video_player(id = "dv_player_sbs1", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner_sbs1();", oncanplay = "remove_vspinner_sbs1();"),
                                     ovideo::ov_video_player(id = "dvyt_player_sbs1", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
-                        uiOutput("player_controls_ui_sbs1", style = "margin-top: 12px;"),
+                        #uiOutput("player_controls_ui_sbs1", style = "margin-top: 12px;"),
                         uiOutput("video_dialog_sbs1"),
                         DT::dataTableOutput("playstable_sbs1")
         ),
-        column(2,sliderInput("time_offset_sbs1", "Clip 1 time offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1),
-               sliderInput("playback_rate_sbs12", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1),
-               sliderInput("start_offset", "Clips start offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1),
-               sliderInput("time_offset_sbs2", "Clip 2 time offset:", min = -3.0, max = 3.0, value = 0.0, step = 0.1)),
+        column(2,
+               uiOutput("player_controls_ui_sbs1", style = "margin-top: 12px;"),
+               uiOutput("player_controls_ui_sbs2", style = "margin-top: 12px;"),
+               #sliderInput("time_offset_sbs1", "Clip 1 time offset:", min = -2.0, max = 2.0, value = 0.0, step = 0.1),
+               sliderInput("playback_rate_sbs12", "Playback rate:", min = 0.1, max = 1.5, value = 1.0, step = 0.1),
+               #sliderInput("start_offset", "Clips start offset:", min = -2.0, max = 2.0, value = 0.0, step = 0.1),
+               #sliderInput("time_offset_sbs12", "Clips time offset:", min = -2.0, max = 2.0, value = 0.0, step = 0.1),
+               uiOutput("player_controls_ui_sbs12", style = "margin-top: 12px;")),
         column(5, tags$div(id = "video_holder_sbs2",
                            ovideo::ov_video_player(id = "dv_player_sbs2", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 95%;", onloadstart = "set_vspinner_sbs2();", oncanplay = "remove_vspinner_sbs2();"),
                            ovideo::ov_video_player(id = "dvyt_player_sbs2", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 95%; height: 480px; display:none;")), ## start hidden
-               uiOutput("player_controls_ui_sbs2", style = "margin-top: 12px;"),
+               #uiOutput("player_controls_ui_sbs2", style = "margin-top: 12px;"),
                uiOutput("video_dialog_sbs2"),
                DT::dataTableOutput("playstable_sbs2")
         )),
