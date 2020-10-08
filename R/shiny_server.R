@@ -1146,7 +1146,7 @@ ovva_shiny_server <- function(app_data) {
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"),
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE,
-                                             initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
+                                             initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger_sbs1", new Date().getTime()); }')))
             } else {
                 NULL
             }
@@ -1160,7 +1160,7 @@ ovva_shiny_server <- function(app_data) {
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = 1, target = "row"),
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE,
-                                             initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
+                                             initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger_sbs2", new Date().getTime()); }')))
             } else {
                 NULL
             }
@@ -1211,7 +1211,7 @@ ovva_shiny_server <- function(app_data) {
                 ## scrolling works on the VISIBLE row index, so it depends on any column filters that might have been applied
                 visible_rowidx <- which(input$playstable_sbs1_rows_all == selr)
                 scrollto <- max(visible_rowidx-1-2, 0) ## -1 for zero indexing, -2 to keep the selected row 2 from the top
-                evaljs(paste0("$('#playstable').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
+                evaljs(paste0("$('#playstable_sbs1').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
             }
         }
         observeEvent(input$scroll_trigger_sbs2, scroll_playstable_sbs2())
@@ -1221,7 +1221,7 @@ ovva_shiny_server <- function(app_data) {
                 ## scrolling works on the VISIBLE row index, so it depends on any column filters that might have been applied
                 visible_rowidx <- which(input$playstable_sbs2_rows_all == selr)
                 scrollto <- max(visible_rowidx-1-2, 0) ## -1 for zero indexing, -2 to keep the selected row 2 from the top
-                evaljs(paste0("$('#playstable').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
+                evaljs(paste0("$('#playstable_sbs2').find('.dataTable').DataTable().scroller.toPosition(", scrollto, ", false);"))
             }
         }
         ## when player changes item, it triggers input$playstable_current_item via the video_onstart() function. Update the selected row in the playstable
