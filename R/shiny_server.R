@@ -2,6 +2,7 @@ ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
         allow_item_deletion <- FALSE
+        enable_prefetch <- TRUE
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
@@ -508,12 +509,20 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$playstable_current_item) && !is.null(playlist())) {
                 try({
                     ## input$playstable_current_item is 0-based
-                    isolate(np <- nrow(playlist()))
-                    if (np < 1) {
+                    cur_row <- input$playstable_current_item+1L
+                    isolate(pl <- playlist())
+                    if (nrow(pl) < 1) {
                         ## empty table
                         master_playstable_selected_row <<- -99L
-                    } else if (input$playstable_current_item < np) {
-                        playstable_select_row(input$playstable_current_item+1)
+                    } else if (cur_row <= nrow(pl)) {
+                        playstable_select_row(cur_row)
+                        if (enable_prefetch && video_player_type() %eq% "local" && cur_row < nrow(pl)) {
+                            next_row <- cur_row+1L
+                            if (!pl$video_src[cur_row] %eq% pl$video_src[next_row] || pl$seamless_start_time[next_row] > (pl$seamless_start_time[cur_row] + pl$seamless_duration[cur_row])) {
+                                ## start prefetching the next item 
+                                evaljs(ovideo::ov_playlist_as_onclick(pl[next_row, ], video_id = "dv_prefetch", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE, controller_var = "dvpl_prefetch"))
+                            }
+                        }
                     } else {
                         ## reached the end of the playlist
                         master_playstable_selected_row <<- -99L
@@ -709,6 +718,7 @@ ovva_shiny_server <- function(app_data) {
                     js_show("dvyt_player")
                 }
                 ov_video_control("stop", controller_var = "dvpl")
+                if (enable_prefetch) ov_video_control("stop", controller_var = "dvpl_prefetch")
                 if (is_fresh_playlist) {
                     evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist_and_play", seamless = TRUE, controller_var = "dvpl"))
                 } else {
@@ -722,6 +732,7 @@ ovva_shiny_server <- function(app_data) {
             } else {
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvpl.clear_playlist();")
+                evaljs("dvpl_prefetch.clear_playlist();")
                 ## evaljs("remove_vspinner();") ## doesn't have an effect?
                 evaljs("document.getElementById(\"subtitle\").textContent=\"Score\"; document.getElementById(\"subtitleskill\").textContent=\"Skill\";")
             }
@@ -747,6 +758,7 @@ ovva_shiny_server <- function(app_data) {
         })
         observeEvent(input$create_clip_button, {
             ov_video_control("stop", controller_var = "dvpl")
+            if (enable_prefetch) ov_video_control("stop", controller_var = "dvpl_prefetch")
             showModal(modalDialog(title = "Create and download video clip", size = "l", "Please wait, creating clip. This could take some time.", uiOutput("clip_status_ui")))
             ## TODO - add progress indicator to that somehow? may not be possible with parallel
             ## do the video crunching

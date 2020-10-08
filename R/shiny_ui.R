@@ -90,7 +90,8 @@ fluidRow(column(8, tags$div(id = "video_holder",
                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;")), ## start hidden
                 plotOutput("video_overlay"),
                 uiOutput("player_controls_ui", style = "margin-top: 12px;"),
-                uiOutput("video_dialog")
+                uiOutput("video_dialog"),
+                tags$div(id = "video_prefetch_holder", style = "display:none;", ovideo::ov_video_player(id = "dv_prefetch", type = "local", controls = FALSE, style = "display:none;"))
                 ##uiOutput("preview_button_ui", inline = TRUE),
                 ##uiOutput("open_preview_ui", inline = TRUE),
                 ),
@@ -145,6 +146,6 @@ tags$table(tags$tr(tags$th(),
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
-tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { console.log('dvjs_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl_prefetch = new dvjs_controller('dv_prefetch','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { console.log('dvjs_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
 )
 }
