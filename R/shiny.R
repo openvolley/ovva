@@ -7,6 +7,12 @@
 #' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)
 #' @param ... : additional parameters passed to the UI and server functions
 #'
+#' @examples
+#' \dontrun{
+#'   ## assuming that your data files are in the data/volley/ folder
+#'   ovva_shiny(data_path = c(MyData = "data/volley"))
+#' }
+#'
 #' @export
 ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), highlight_handler = ovva_highlight_handler(), video_server = "lighttpd", launch_browser = TRUE, ...) {
     assert_that(is.flag(launch_browser), !is.na(launch_browser))

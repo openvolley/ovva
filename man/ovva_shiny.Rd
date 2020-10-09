@@ -29,3 +29,10 @@ ovva_shiny(
 \description{
 Launch the Shiny app
 }
+\examples{
+\dontrun{
+  ## assuming that your data files are in the data/volley/ folder
+  ovva_shiny(data_path = c(MyData = "data/volley"))
+}
+
+}
