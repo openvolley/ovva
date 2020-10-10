@@ -84,9 +84,9 @@ preprocess_data <- function(x) {
                                      .data$skill %eq% "Freeball" ~ "Freeball dig",
                                      TRUE ~ .data$skill))
     x <- mutate(x, skilltype = case_when(.data$skill %in% c("Serve", "Reception") ~ .data$skill_type,
-                                         .data$skill == "Attack" ~ .data$attack_description,
-                                         .data$skill == "Set" ~ .data$set_code))
-    x <- mutate(x, skill_type = case_when(.data$skill == "Set" ~ .data$set_code,
+                                         .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description),
+                                         .data$skill == "Set" ~ ifelse(is.na(.data$set_code), .data$skill_type, .data$set_code)))
+    x <- mutate(x, skill_type = case_when(.data$skill == "Set" & !is.na(.data$set_code) ~ .data$set_code,
                                           TRUE ~ .data$skill_type))
   x
 }
