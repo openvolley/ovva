@@ -629,7 +629,7 @@ ovva_shiny_server <- function(app_data) {
             } else {
                 event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
                                      skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
-                                                           .data$skill == "Attack" ~ .data$attack_description),
+                                                           .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description)),
                                      subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                      subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
                 event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
