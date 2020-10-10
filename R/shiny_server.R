@@ -86,7 +86,14 @@ ovva_shiny_server <- function(app_data) {
                     out <- lapply(tmp, function(z) z$meta)
                 } else {
                     myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
-                    out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) pv_read(z)$meta else read_dv(z, metadata_only = TRUE)$meta)
+                    dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
+                    dvargs$metadata_only <- TRUE
+                    out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
+                                                           pv_read(z)$meta
+                                                       } else {
+                                                           dvargs$filename <- z
+                                                           do.call(dv_read, dvargs)$meta
+                                                       })
                 }
                 if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
                     try(out <- lapply(out, app_data$meta_preprocess))
@@ -140,7 +147,14 @@ ovva_shiny_server <- function(app_data) {
                             mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
                         } else {
                             myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
-                            mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) pv_read(z)$plays else read_dv(z, skill_evaluation_decode = "guess")$plays)) ## other args to read_dv?
+                            dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
+                            if (!"skill_evaluation_decode" %in% names(dvargs)) dvargs$skill_evaluation_decode <- "guess"
+                            mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) {
+                                                                               pv_read(z)$plays
+                                                                           } else {
+                                                                               dvargs$filename <- z
+                                                                               do.call(dv_read, dvargs)$plays
+                                                                           }))
                         }
                         mydat <- mydat[mydat$match_id %in% my_match_ids, ]
                         mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
@@ -1558,7 +1572,7 @@ ovva_shiny_server <- function(app_data) {
             } else {
                 event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
                                      skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
-                                                           .data$skill == "Attack" ~ .data$attack_description),
+                                                           .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description)),
                                      subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                      subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
                 event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
@@ -1861,7 +1875,10 @@ ovva_shiny_server <- function(app_data) {
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
-            if (!is.null(playlist()) && nrow(playlist()) > 0) {
+            ok <- !is.null(playlist()) && nrow(playlist()) > 0 && video_player_type() != "youtube"
+            ## also check that videos are not remote
+            ok <- ok && !any(grepl("^https?://", playlist()$video_src, ignore.case = TRUE))
+            if (ok) {
                 actionButton("create_clip_button", "Download clip")
             } else {
                 NULL

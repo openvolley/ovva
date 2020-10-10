@@ -5,7 +5,7 @@
 #' @name ovva
 #' @docType package
 #' @importFrom assertthat assert_that is.flag is.string
-#' @importFrom datavolley read_dv
+#' @importFrom datavolley dv_read
 #' @importFrom dplyr .data bind_rows case_when distinct do group_by group_by_at lag lead left_join mutate n tribble ungroup
 #' @importFrom htmltools tagList tags
 #' @importFrom methods as

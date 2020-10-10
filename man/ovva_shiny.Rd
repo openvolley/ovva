@@ -29,3 +29,16 @@ ovva_shiny(
 \description{
 Launch the Shiny app
 }
+\examples{
+\dontrun{
+  ## to use your own data, assuming that your data files are in the data/volley/ folder
+  ovva_shiny(data_path = c(MyData = "data/volley"))
+
+  ## or to use the bundled demonstration file
+  ovva_shiny_demo()
+}
+
+}
+\seealso{
+\code{\link{ovva_shiny_demo}}
+}

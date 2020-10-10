@@ -3,7 +3,7 @@
 \docType{import}
 \name{reexports}
 \alias{reexports}
-\alias{read_dv}
+\alias{dv_read}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -11,6 +11,6 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{datavolley}{\code{\link[datavolley]{read_dv}}}
+  \item{datavolley}{\code{\link[datavolley]{dv_read}}}
 }}
 

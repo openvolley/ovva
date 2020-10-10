@@ -36,7 +36,11 @@ library(ovva)
 ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
 ```
 
-![](man/figures/ovva-screenshot.png)
+-----
+
+![](man/figures/ovva.gif)
+
+-----
 
 ### Notes
 
@@ -52,9 +56,30 @@ ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
     Camera0=D:\video\2019_03_01-KATS-BEDS.mp4
     [3SCOUT]
 
-2.  The video server runs in a separate thread to the shiny application
+2.  If your videos are hosted online, you don’t need them locally. This
+    includes YouTube videos (they must be either ‘public’ or ‘unlisted’,
+    but not ‘private’). To use an online video, enter the URL as the
+    video location:
+
+<!-- end list -->
+
+    [3RESERVE]
+    [3VIDEO]
+    Camera0=https://www.youtube.com/watch?v=NisDpPFPQwU
+    [3SCOUT]
+
+and start `ovva` with `video_server = "none"`:
+
+``` r
+ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"), video_server = "none")
+```
+
+(you still need your dvw files locally — these are in the `data_path`
+folder).
+
+3.  The video server runs in a separate thread to the shiny application
     itself. If the `lighttpd` executable is present on the system path,
     this will be used for serving videos by default, otherwise the
-    `servr` package will be used. The performance of `lighttpd` is
+    `servr` R package will be used. The performance of `lighttpd` is
     better, so you might want to install this if you don’t already have
     it: <https://www.lighttpd.net/download/>
