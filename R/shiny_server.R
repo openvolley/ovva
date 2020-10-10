@@ -739,7 +739,10 @@ ovva_shiny_server <- function(app_data) {
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
-            if (!is.null(playlist()) && nrow(playlist()) > 0) {
+            ok <- !is.null(playlist()) && nrow(playlist()) > 0 && video_player_type() != "youtube"
+            ## also check that videos are not remote
+            ok <- ok && !any(grepl("^https?://", playlist()$video_src, ignore.case = TRUE))
+            if (ok) {
                 actionButton("create_clip_button", "Download clip")
             } else {
                 NULL
