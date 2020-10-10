@@ -71,7 +71,7 @@ ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
 and start `ovva` with `video_server = "none"`:
 
 ``` r
-ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"), video_server = "none")
+ovva_shiny(data_path = c(MyData = "my/dvw/path"), video_server = "none")
 ```
 
 (you still need your dvw files locally — this is the `data_path` folder
