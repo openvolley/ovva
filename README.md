@@ -74,8 +74,8 @@ and start `ovva` with `video_server = "none"`:
 ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"), video_server = "none")
 ```
 
-(you still need your dvw files locally — these are in the `data_path`
-folder).
+(you still need your dvw files locally — this is the `data_path` folder
+above).
 
 3.  The video server runs in a separate thread to the shiny application
     itself. If the `lighttpd` executable is present on the system path,
