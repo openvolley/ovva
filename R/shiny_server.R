@@ -576,8 +576,10 @@ ovva_shiny_server <- function(app_data) {
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd/servr server, so need to make symlinks in its document root directory pointing to the actual video files
-                    vf <- tryCatch(fs::path_real(meta_video$file), error = function(e) NULL)
-                    if (is.null(vf) || length(vf) < 1) return(NULL)
+                    is_url <- is_youtube_id(meta_video$file) | grepl("^https?://", meta_video$file, ignore.case = TRUE)
+                    vf <- NULL
+                    if (any(!is_url)) vf <- tryCatch(fs::path_real(meta_video$file[!is_url]), error = function(e) NULL)
+                    if (length(vf) < 1 && !any(is_url)) return(NULL)
                     ## may have multiple video files at this point
                     for (thisf in vf) {
                         if (fs::file_exists(thisf)) {
@@ -586,19 +588,17 @@ ovva_shiny_server <- function(app_data) {
                             fs::link_create(thisf, symlink_abspath)
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
-                        } else if (is_youtube_id(vf) || grepl("https?://", vf, ignore.case = TRUE)) {
+                        } else if (is_youtube_id(thisf) || grepl("https?://", thisf, ignore.case = TRUE)) {
                             ## youtube ID or link to video, don't do anything
+                            ## should never get here, but just in case
                         } else {
                             ## video file does not exist!
                             stop("video file ", thisf, " does not exist, not handled yet")
                         }
                     }
                     meta_video$video_src <- file.path(app_data$video_server_url, basename(meta_video$file))
-                    nidx <- is_youtube_id(meta_video$file) | grepl("https?://", meta_video$file, ignore.case = TRUE)
-                    ## replace these with verbatim copy of original info
-                    meta_video$video_src[nidx] <- meta_video$file[nidx]
-                ##} else if (app_data$video_serve_method == "standalone") {
-                    ##    meta_video$video_src <- meta_video$file ## full (local) path
+                    ## replace URLs with verbatim copy of original info
+                    meta_video$video_src[is_url] <- meta_video$file[is_url]
                 } else if (is.function(app_data$video_serve_method)) {
                     if (nrow(meta_video) > 0) {
                         ## block user interaction while this happens
