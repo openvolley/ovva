@@ -1,2 +1,2 @@
 #' @export
-datavolley::read_dv
+datavolley::dv_read
