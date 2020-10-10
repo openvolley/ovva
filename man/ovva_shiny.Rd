@@ -22,7 +22,7 @@ ovva_shiny(
 
 \item{video_server}{string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD}
 
-\item{launch_browser}{logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)}
+\item{launch_browser}{logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter). If \code{NULL}, don't launch the app, just return the \code{shinyApp} object}
 
 \item{...}{: additional parameters passed to the UI and server functions}
 }

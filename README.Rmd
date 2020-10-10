@@ -76,7 +76,7 @@ Camera0=https://www.youtube.com/watch?v=NisDpPFPQwU
 and start `ovva` with `video_server = "none"`:
 
 ```{r eval = FALSE}
-ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"), video_server = "none")
+ovva_shiny(data_path = c(MyData = "my/dvw/path"), video_server = "none")
 
 ```
 
