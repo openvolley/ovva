@@ -88,6 +88,8 @@ preprocess_data <- function(x) {
                                          .data$skill == "Set" ~ ifelse(is.na(.data$set_code), .data$skill_type, .data$set_code)))
     x <- mutate(x, skill_type = case_when(.data$skill == "Set" & !is.na(.data$set_code) ~ .data$set_code,
                                           TRUE ~ .data$skill_type))
+    ## NA skilltype causes problems, if we have multiple skills selected then it will filter out the missing skilltype (e.g. all blocks, usually)
+    x$skilltype[is.na(x$skilltype) & !is.na(x$skill) & !(x$skill %in% c("Timeout", "Technical timeout", "Substitution"))] <- "no value"
   x
 }
 
