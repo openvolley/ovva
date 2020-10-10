@@ -7,10 +7,14 @@
 #' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)
 #' @param ... : additional parameters passed to the UI and server functions
 #'
+#' @seealso \code{\link{ovva_shiny_demo}}
 #' @examples
 #' \dontrun{
-#'   ## assuming that your data files are in the data/volley/ folder
+#'   ## to use your own data, assuming that your data files are in the data/volley/ folder
 #'   ovva_shiny(data_path = c(MyData = "data/volley"))
+#'
+#'   ## or to use the bundled demonstration file
+#'   ovva_shiny_demo()
 #' }
 #'
 #' @export
