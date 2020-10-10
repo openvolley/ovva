@@ -4,7 +4,7 @@
 #' @param playlist_handler tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_playlist_handler}} for details)
 #' @param highlight_handler tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_highlight_handler}} for details)
 #' @param video_server string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD
-#' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter)
+#' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter). If \code{NULL}, don't launch the app, just return the \code{shinyApp} object
 #' @param ... : additional parameters passed to the UI and server functions
 #'
 #' @seealso \code{\link{ovva_shiny_demo}}
@@ -19,7 +19,7 @@
 #'
 #' @export
 ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), highlight_handler = ovva_highlight_handler(), video_server = "lighttpd", launch_browser = TRUE, ...) {
-    assert_that(is.flag(launch_browser), !is.na(launch_browser))
+    if (!is.null(launch_browser)) assert_that(is.flag(launch_browser), !is.na(launch_browser))
     assert_that(is.data.frame(playlist_handler))
     if (!all(c("skill", "specific", "fun") %in% names(playlist_handler))) stop("playlist_handler must have columns 'skill', 'specific', and 'fun'")
     if (any(duplicated(playlist_handler$specific))) stop("playlist_handler cannot have duplicated values of 'specific'")
@@ -53,5 +53,9 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), hi
     }
     app_data <- c(list(data_path = data_path, playlist_handler = playlist_handler, highlight_handler = highlight_handler, video_serve_method = vsrv$method, video_server_dir = vsrv$dir, video_server_url = vsrv$url), list(...))
     this_app <- list(ui = ovva_shiny_ui(app_data = app_data), server = ovva_shiny_server(app_data = app_data))
-    shiny::runApp(this_app, display.mode = "normal", launch.browser = launch_browser)
+    if (!is.null(launch_browser)) {
+        shiny::runApp(this_app, display.mode = "normal", launch.browser = launch_browser)
+    } else {
+        shiny::shinyApp(ui = this_app$ui, server = this_app$server)
+    }
 }
