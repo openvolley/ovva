@@ -52,7 +52,7 @@ ovva_playlist_handler <- function() {
         x[aidx, ]
     }
     out$fun[[which(out$skill == "Attack" & out$specific == "Recycle")]] <- function(x, team, player) {
-        x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & x$evaluation %eq% "Blocked for reattack", ]
+        x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & (x$evaluation %eq% "Blocked for reattack" | x$special_code %eq% "Block control"), ]
     }
     out$fun[[which(out$skill == "Block" & out$specific == "Triple block")]] <- function(x, team, player) {
         x[x$opposing_team %in% team & x$skill %eq% "Attack" & x$num_players %eq% "3 player block", ]
