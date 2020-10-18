@@ -13,6 +13,7 @@ ovva_shiny_server <- function(app_data) {
             "Special code" = "special_code",
             "Home team score" = "home_team_score", "Visiting team score" = "visiting_team_score",
             "Home team rotation (setter position)" = "home_setter_position", "Visiting team rotation (setter position)" = "visiting_setter_position",
+            "Opposition team rotation (setter position)" = "opposition_setter_position",
             "Custom code" = "custom_code",
             ##"attack_phase", ## not really needed with phase already used
             ##"start_coordinate_x", "start_coordinate_y", "mid_coordinate_x", "mid_coordinate_y", "end_coordinate_x", "end_coordinate_y",
@@ -24,7 +25,7 @@ ovva_shiny_server <- function(app_data) {
             "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
             "Receiving player" = "receiving_player", "Reception grade" = "reception_grade",
-            Setter = "setter", "Opposition setter" = "opposition_setter")
+            Setter = "setter", "Opposition setter" = "opposition_setter", "Opposition team" = "opposition_team")
 
         ## some inits
         master_playstable_selected_row <- -99L ## non-reactive

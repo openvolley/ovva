@@ -63,6 +63,10 @@ preprocess_data <- function(x) {
         x <- mutate(x, serving_setter_position = case_when(.data$serving_team %eq% .data$home_team ~ .data$home_setter_position,
                                                            .data$serving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
     }
+    if (!"opposition_setter_position" %in% names(x)) {
+        x <- mutate(x, opposition_setter_position = case_when(.data$team %eq% .data$home_team ~ .data$visiting_setter_position,
+                                                              .data$team %eq% .data$visiting_team ~ .data$home_setter_position))
+    }
     if (!"breakpoint/sideout" %in% names(x)) {
         x <- mutate(x, `breakpoint/sideout` = case_when(.data$team %eq% .data$receiving_team ~ "Sideout",
                                                         .data$team %eq% .data$serving_team ~ "Breakpoint"))
@@ -71,8 +75,8 @@ preprocess_data <- function(x) {
         x <- mutate(x, setter_position = case_when(.data$team %eq% .data$home_team ~ .data$home_setter_position,
                                                    .data$team %eq% .data$visiting_team ~ .data$visiting_setter_position))
     }
-    if (!"opposing_team" %in% names(x)) {
-        x <- mutate(x, opposing_team = case_when(.data$team %eq% .data$home_team ~ .data$visiting_team,
+    if (!"opposition_team" %in% names(x)) {
+        x <- mutate(x, opposition_team = case_when(.data$team %eq% .data$home_team ~ .data$visiting_team,
                                                  .data$team %eq% .data$visiting_team ~ .data$home_team))
     }
     if (!"freeball_over" %in% names(x)) {
