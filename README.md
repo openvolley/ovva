@@ -32,10 +32,16 @@ remotes::install_github("openvolley/ovva")
 
 ## Usage
 
-Start the shiny app with the path to your DataVolley files:
+Try the inbuilt demo:
 
 ``` r
 library(ovva)
+ovva_shiny_demo()
+```
+
+Or start the shiny app with the path to your DataVolley files:
+
+``` r
 ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
 ```
 
