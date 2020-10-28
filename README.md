@@ -95,3 +95,10 @@ ovva_shiny(data_path = c(MyData = "my/dvw/path"), video_server = "none")
     `servr` R package will be used. The performance of `lighttpd` is
     better, so you might want to install this if you don’t already have
     it: <https://www.lighttpd.net/download/>
+
+-----
+
+Interested in this but you aren’t an R user, or you want to be able to
+easily share this functionality with your players or coaches? See [this
+hosted version](https://apps.untan.gl/ovva/) (available by
+subscription).
