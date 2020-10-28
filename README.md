@@ -21,6 +21,9 @@ experimental. Beware\!
 
 Try it for yourself: <https://openvolley.shinyapps.io/ovva_demo/>
 
+(This demo is running on a free (time-limited) shinyapps tier, so it may
+not be available if too many people have used it recently.)
+
 ## Installation
 
 You can install from [GitHub](https://github.com/openvolley/ovva) with:
