@@ -7,7 +7,7 @@
 ovva_shiny_demo()
 }
 \description{
-The demonstration data set is the 2018 women's final (first of 3) from the German Bundesliga: Schweriner SC vs. Dresdner SC.
+The demonstration data set is the 2018 women's final (first of 3) from the German Bundesliga: Allianz MTV Stuttgart vs SSC Palmberg Schwerin.
 }
 \examples{
 \dontrun{
