@@ -824,47 +824,37 @@ ovva_shiny_server <- function(app_data) {
         ## height of the video player element
         vo_height <- reactiveVal("auto")
         observe({
-            if (video_player_type() %eq% "youtube") {
-                if (!is.null(input$dvyt_height) && as.numeric(input$dvyt_height) > 0) {
-                    vo_height(as.numeric(input$dvyt_height))
-                    evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
-                } else {
-                    vo_height("auto")
-                    evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
-                }
+            my_height <- if (video_player_type() %eq% "youtube") input$dvyt_height else input$dv_height
+            if (!is.null(my_height) && as.numeric(my_height) > 0) {
+                vo_height(as.numeric(my_height))
+                evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '", vo_height(), "px';"))
             } else {
-                if (!is.null(input$dv_height) && as.numeric(input$dv_height) > 0) {
-                    vo_height(as.numeric(input$dv_height))
-                    evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
-                } else {
-                    vo_height("auto")
-                    evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
-                }
+                vo_height("auto")
+                evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '400px';"))
             }
         })
         ## width of the video player element
         vo_width <- reactiveVal("auto")
         observe({
-            if (video_player_type() %eq% "youtube") {
-                if (!is.null(input$dvyt_width) && as.numeric(input$dvyt_width) > 0) {
-                    vo_width(as.numeric(input$dvyt_width))
-                } else {
-                    vo_width("auto")
-                }
+            my_width <- if (video_player_type() %eq% "youtube") input$dvyt_width else input$dv_width
+            if (!is.null(my_width) && as.numeric(my_width) > 0) {
+                vo_width(as.numeric(my_width))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width(), "px';"))
             } else {
-                if (!is.null(input$dv_width) && as.numeric(input$dv_width) > 0) {
-                    vo_width(as.numeric(input$dv_width))
-                } else {
-                    vo_width("auto")
-                }
+                vo_width("auto")
+                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '600px';"))
             }
         })
         ## height of the video player container, use as negative vertical offset on the overlay element
         observe({
             if (!is.null(input$vo_voffset) && as.numeric(input$vo_voffset) > 0) {
                 evaljs(paste0("document.getElementById('video_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.marginTop = '-", input$vo_voffset, "px';"))
             } else {
                 evaljs("document.getElementById('video_overlay').style.marginTop = '0px';")
+                evaljs("document.getElementById('video_overlay_img').style.marginTop = '0px';")
             }
         })
 
