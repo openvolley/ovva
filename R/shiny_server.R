@@ -827,8 +827,9 @@ ovva_shiny_server <- function(app_data) {
             my_height <- if (video_player_type() %eq% "youtube") input$dvyt_height else input$dv_height
             if (!is.null(my_height) && as.numeric(my_height) > 0) {
                 vo_height(as.numeric(my_height))
-                evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height(), "px';"))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '", vo_height(), "px';"))
+                ## +1 because of 1px border on video element
+                evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height()+1, "px';"))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '", vo_height()+1, "px';"))
             } else {
                 vo_height("auto")
                 evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
@@ -841,7 +842,7 @@ ovva_shiny_server <- function(app_data) {
             my_width <- if (video_player_type() %eq% "youtube") input$dvyt_width else input$dv_width
             if (!is.null(my_width) && as.numeric(my_width) > 0) {
                 vo_width(as.numeric(my_width))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width(), "px';"))
+                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width()+1, "px';"))
             } else {
                 vo_width("auto")
                 evaljs(paste0("document.getElementById('video_overlay_img').style.width = '600px';"))
