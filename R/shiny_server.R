@@ -651,6 +651,8 @@ ovva_shiny_server <- function(app_data) {
                                      subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
                                      subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
                 event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
+                ## note that the event_list can contain match_ids that do not appear in meta_video, if meta gets updated and the corresponding pbp_augment update is pending
+                if (!all(na.omit(event_list$match_id) %in% meta_video$match_id)) return(NULL) ## return NULL and await retrigger
                 ## TODO: if we filter items out here because of missing video times (but not filter from the playstable), doesn't the playstable selected row get out of whack with the actual item being played?
                 vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE) | grepl("https?://youtu\\.be", meta_video$video_src, ignore.case = TRUE))) {
                            "youtube"
