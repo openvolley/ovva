@@ -145,10 +145,13 @@ ovva_shiny_server <- function(app_data) {
                         }
                         mydat <- mydat[mydat$match_id %in% my_match_ids, ]
                         mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
-                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
-                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
-                        mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
-                                                                   TRUE ~ .data$game_id))
+##                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
+##                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
+##                        mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
+##                                                                   TRUE ~ .data$game_id))
+##                        ## de-duplicate game_ids
+##                        dedup <- mutate(distinct(dplyr::select(mydat, .data$match_id, .data$game_id)), game_id = make.unique(.data$game_id, sep = "_"))
+##                        mydat <- left_join(dplyr::select(mydat, -"game_id"), dedup, by = "match_id")
                         pbp(mydat)
                         ## Augment pbp with additional covariates
                         pbp_augment(preprocess_data(mydat))
@@ -166,14 +169,14 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Game ID
-        selected_game_id <- reactive({
+        selected_match_id <- reactive({
             if (trace_execution) message("recalculating game_table")
             if (is.null(input$game_table_dropdown)) {
                 NULL
             } else {
-                datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+                datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
                 datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
-                datatble$game_id[datatble$display_ID %in% input$game_table_dropdown]
+                datatble$match_id[datatble$display_ID %in% input$game_table_dropdown]
             }
         })
 
@@ -183,7 +186,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id())
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id())
                 sort(unique(na.omit(tmp$team)))
             }
         })
@@ -199,7 +202,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$player_name)))
             }
         })
@@ -215,7 +218,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$skill)))
             }
         })
@@ -255,7 +258,7 @@ ovva_shiny_server <- function(app_data) {
             app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"]
         })
         output$highlight_based_ui <- renderUI({
-                if (length(selected_game_id()) < 1) {
+                if (length(selected_match_id()) < 1) {
                     tags$div(class = "alert alert-info", "Choose a game first")
                 } else {
                 ## populate highlight_list options, keeping any existing selections
@@ -275,7 +278,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
                 sort(unique(tmp$skilltype))
             }
         })
@@ -289,7 +292,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp$phase))
             }
         })
@@ -304,7 +307,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                temp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                temp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 avail <- colnames(temp)
                 avail <- avail[vapply(avail, function(z) !all(is.na(temp[[z]])), FUN.VALUE = TRUE)] ## exclude all-NA cols
                 avail <- adfilter_cols_to_show[adfilter_cols_to_show %in% avail] ## only those in our pre-defined list of adfilter_cols_to_show
@@ -326,7 +329,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp[[col_to_select]]))
             }
         })
@@ -351,7 +354,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$game_id %in% selected_game_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
                 sort(unique(tmp[[col_to_select]]))
             }
         })
@@ -387,7 +390,7 @@ ovva_shiny_server <- function(app_data) {
                 output$no_game_data <- renderUI(NULL)
                 js_show("game_table_dropdown")
                 ## Customize pbp
-                datatble <- dplyr::select(distinct(pbp_augment(), .data$game_id, .data$game_date, .data$visiting_team, .data$home_team), "game_id", "game_date", "visiting_team", "home_team")
+                datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
                 datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
                 dplyr::pull(dplyr::select(datatble, .data$display_ID))
             }
@@ -398,18 +401,18 @@ ovva_shiny_server <- function(app_data) {
             updatePickerInput(session, "game_table_dropdown", choices = game_table_dropdown(), selected = sel)
         })
 
-        ## Table of all actions as per selected_game_id() and player_id() and evaluation()
+        ## Table of all actions as per selected_match_id() and player_id() and evaluation()
         playstable_to_delete <- NULL
         playstable_data_raw <- debounce(reactive({
             ## Customize pbp
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_game_id()) || is.null(meta())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_match_id()) || is.null(meta())) {
                 playstable_to_delete <<- NULL
                 NULL
             } else {
                 if (trace_execution) message("recalculating playstable_data")
                 pbp <- pbp_augment()
                 meta <- meta()
-                game_select <- selected_game_id()
+                game_select <- selected_match_id()
                 team_select <- input$team_list
                 player_select <- input$player_list
                 skill_select <- input$skill_list
@@ -423,22 +426,22 @@ ovva_shiny_server <- function(app_data) {
                     myfuns <- funs_from_playlist(playlist_select)
                     if (length(game_select) == 1) {
                         ## apply each of myfuns in turn and rbind the results
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% game_select), team = team_select, player = player_select)))
                     } else{
-                        pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
+                        pbp_tmp <- dplyr::filter(pbp, .data$match_id %in% game_select)
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else if (!is.null(highlight_select) & !is.null(game_select)) {
                     myfuns <- funs_from_highlight(highlight_select)
                     if (length(game_select) == 1) {
                         ## apply each of myfuns in turn and rbind the results
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$game_id %in% game_select), team = team_select, player = player_select)))
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% game_select), team = team_select, player = player_select)))
                     } else{
-                        pbp_tmp <- dplyr::filter(pbp, .data$game_id %in% game_select)
+                        pbp_tmp <- dplyr::filter(pbp, .data$match_id %in% game_select)
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
                     }
                 } else {
-                    pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list &.data$skill %in% input$skill_list & .data$team %in% input$team_list & .data$game_id %in% selected_game_id())
+                    pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list &.data$skill %in% input$skill_list & .data$team %in% input$team_list & .data$match_id %in% selected_match_id())
                     if (!is.null(input$skilltype_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$skilltype %in% input$skilltype_list)
                     if (!is.null(input$phase_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$phase %in% input$phase_list)
                 }
@@ -561,14 +564,14 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(input$game_table_dropdown) || is.null(pbp()) || nrow(pbp()) < 1) {
                 NULL
             } else {
-                datatble <- dplyr::select(distinct(pbp(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team), "match_id", "game_date", "visiting_team", "home_team")
+                datatble <- distinct(pbp(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
                 datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
                 unique(na.omit(datatble$match_id[datatble$display_ID %in% input$game_table_dropdown]))
             }
         })
 
         video_meta <- reactive({
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(selected_matches())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(selected_matches())) {
                 NULL
             } else {
                 if (trace_execution) message("recalculating video_meta")
@@ -639,7 +642,7 @@ ovva_shiny_server <- function(app_data) {
             if (trace_execution) message("recalculating playlist")
             ## Customize pbp
             meta_video <- video_meta()
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_game_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
                 event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
@@ -806,7 +809,7 @@ ovva_shiny_server <- function(app_data) {
         })
         output$download_clip <- shiny::downloadHandler(
             filename = function() {
-                filename <- paste0("Highlights", selected_game_id(), ".mp4")
+                filename <- paste0("ovva_highlights.mp4")
             },
             content = function(file) {
                 removeModal()
