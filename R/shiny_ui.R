@@ -5,7 +5,7 @@ ovva_shiny_ui <- function(app_data) {
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
                  tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;}"),
-                 tags$style("#video_overlay, #video_overlay_img { -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
+                 tags$style("#video_overlay, #video_overlay_img { position:absolute; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
                  if (!is.null(app_data$css)) tags$style(app_data$css),
                  tags$script("$(document).on('shiny:sessioninitialized', function() { $('#video_overlay_img').hide(); });")
              ),
@@ -90,7 +90,7 @@ tags$hr(),
 fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                             ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 90%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
-                            tags$img(id = "video_overlay_img", style = "position:absolute;")),
+                            tags$img(id = "video_overlay_img")),
                 plotOutput("video_overlay"),
                 uiOutput("player_controls_ui", style = "margin-top: 12px;"),
                 uiOutput("video_dialog")
