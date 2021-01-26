@@ -20,7 +20,7 @@ Imports:
     future.apply,
     htmltools,
     methods,
-    ovideo (>= 0.6.0),
+    ovideo (>= 0.11.2),
     peranavolley,
     servr (>= 0.15.1),
     shiny,
