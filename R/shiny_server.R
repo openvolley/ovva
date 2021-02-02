@@ -62,6 +62,7 @@ ovva_shiny_server <- function(app_data) {
         pbp <- reactiveVal(NULL)
         pbp_augment <- reactiveVal(NULL)
         got_no_video <- reactiveVal(FALSE)
+        season_data_type <- reactiveVal("indoor")
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
@@ -100,7 +101,9 @@ ovva_shiny_server <- function(app_data) {
                     pbp(NULL)
                     pbp_augment(NULL)
                     out <- NULL
+                    season_data_type("indoor") ## default
                 } else {
+                    season_data_type(tryCatch(if (grepl("beach", out[[1]]$match$regulation)) "beach" else "indoor", error = function(e) "indoor"))
                     ## for each video file, check if it exists and try and find it if not
                     for (z in seq_along(out)) {
                         if (is_youtube_id(out[[z]]$video$file) || grepl("^https?://", out[[z]]$video$file, ignore.case = TRUE)) {
@@ -154,7 +157,7 @@ ovva_shiny_server <- function(app_data) {
 ##                        mydat <- left_join(dplyr::select(mydat, -"game_id"), dedup, by = "match_id")
                         pbp(mydat)
                         ## Augment pbp with additional covariates
-                        pbp_augment(preprocess_data(mydat))
+                        pbp_augment(preprocess_data(mydat, data_type = season_data_type()))
                     }
                 }
                 removeModal()
@@ -164,6 +167,7 @@ ovva_shiny_server <- function(app_data) {
                 got_no_video(FALSE)
                 pbp(NULL)
                 pbp_augment(NULL)
+                season_data_type("indoor") ## default
                 NULL
             }
         })
@@ -311,6 +315,10 @@ ovva_shiny_server <- function(app_data) {
                 avail <- colnames(temp)
                 avail <- avail[vapply(avail, function(z) !all(is.na(temp[[z]])), FUN.VALUE = TRUE)] ## exclude all-NA cols
                 avail <- adfilter_cols_to_show[adfilter_cols_to_show %in% avail] ## only those in our pre-defined list of adfilter_cols_to_show
+                ## also refine by data_type
+                if (grepl("beach", season_data_type())) {
+                    avail <- avail[!avail %in% c("set_code", "set_description", "home_setter_position", "visiting_setter_position", "opposition_setter_position", "receiving_setter_position", "serving_setter_position", "setter_position", "setter", "opposition_setter")]
+                }
                 avail <- avail[order(names(avail))]
                 c(list("No filter" = ""), avail) ## add a "no filter" option
             }
