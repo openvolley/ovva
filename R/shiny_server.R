@@ -751,7 +751,7 @@ ovva_shiny_server <- function(app_data) {
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvpl.clear_playlist();")
                 ## evaljs("remove_vspinner();") ## doesn't have an effect?
-                evaljs("document.getElementById(\"subtitle\").textContent=\"Score\"; document.getElementById(\"subtitleskill\").textContent=\"Skill\";")
+                evaljs("if (document.getElementById(\"subtitle\")) { document.getElementById(\"subtitle\").textContent=\"Score\"; }; if (document.getElementById(\"subtitleskill\")) { document.getElementById(\"subtitleskill\").textContent=\"Skill\"; }")
             }
         })
         output$player_controls_ui <- renderUI({
