@@ -42,7 +42,7 @@ ovva_video_server <- function(method, port) {
         }
     } else {
         ## start servr instance
-        servr::httd(dir = video_server_dir, port = port)
+        servr::httd(dir = video_server_dir, port = port, browser = FALSE)
         cleanup_fun <- function() {
             message("cleaning up servr")
             servr::daemon_stop()
