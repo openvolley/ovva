@@ -598,12 +598,14 @@ ovva_shiny_server <- function(app_data) {
                             ## link_create doesn't allow files to be symlinked on windows, see https://github.com/r-lib/fs/issues/79
                             ## we can only symlink directories
                             ## so the symlink created in the servr root is a link to the directory containing the video file
-                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, digest::digest(basename(thisf), algo = "sha1")))
-                            suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
-                            ## now link the directory of the video file to that symlink name
-                            fs::link_create(dirname(thisf), symlink_abspath)
-                            onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
-                            onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
+                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, digest::digest(fs::path_dir(thisf), algo = "sha1")))
+                            do_create_this_symlink <- !(fs::link_exists(symlink_abspath) && fs::link_path(symlink_abspath) == fs::path_dir(thisf))
+                            if (isTRUE(do_create_this_symlink)) {
+                                suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
+                                fs::link_create(fs::path_dir(thisf), symlink_abspath)
+                                onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
+                                onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
+                            }
                         } else if (is_youtube_id(thisf) || grepl("https?://", thisf, ignore.case = TRUE)) {
                             ## youtube ID or link to video, don't do anything
                             ## should never get here, but just in case
@@ -614,10 +616,10 @@ ovva_shiny_server <- function(app_data) {
                     }
                     ## windows causes us headaches here, because we can only symlink directories (not files), see above
                     ## so we have to symlink the directory containing each video file
-                    ## that symlink will be given the hashed name of the file itself
-                    name_hashes <- vapply(basename(meta_video$file), digest::digest, algo = "sha1", FUN.VALUE = "")
+                    ## that symlink will be given the hashed name of the video directory
+                    path_hashes <- vapply(fs::path_dir(meta_video$file), digest::digest, algo = "sha1", FUN.VALUE = "")
                     ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
-                    meta_video$video_src <- paste_url(app_data$video_server_url, name_hashes, basename(meta_video$file))
+                    meta_video$video_src <- paste_url(app_data$video_server_url, path_hashes, basename(meta_video$file))
                     ## replace URLs with verbatim copy of original info
                     meta_video$video_src[is_url] <- meta_video$file[is_url]
                 } else if (is.function(app_data$video_serve_method)) {
