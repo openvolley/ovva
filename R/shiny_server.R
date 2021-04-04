@@ -593,11 +593,15 @@ ovva_shiny_server <- function(app_data) {
                     if (any(!is_url)) vf <- tryCatch(fs::path_real(meta_video$file[!is_url]), error = function(e) NULL)
                     if (length(vf) < 1 && !any(is_url)) return(NULL)
                     ## may have multiple video files at this point
-                    for (thisf in vf) {
+                    for (thisf in unique(vf)) {
                         if (fs::file_exists(thisf)) {
-                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, basename(thisf)))
+                            ## link_create doesn't allow files to be symlinked on windows, see https://github.com/r-lib/fs/issues/79
+                            ## we can only symlink directories
+                            ## so the symlink created in the servr root is a link to the directory containing the video file
+                            symlink_abspath <- fs::path_abs(file.path(app_data$video_server_dir, digest::digest(basename(thisf), algo = "sha1")))
                             suppressWarnings(try(unlink(symlink_abspath), silent = TRUE))
-                            fs::link_create(thisf, symlink_abspath)
+                            ## now link the directory of the video file to that symlink name
+                            fs::link_create(dirname(thisf), symlink_abspath)
                             onStop(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                             onSessionEnded(function() try({ unlink(symlink_abspath) }, silent = TRUE))
                         } else if (is_youtube_id(thisf) || grepl("https?://", thisf, ignore.case = TRUE)) {
@@ -608,7 +612,12 @@ ovva_shiny_server <- function(app_data) {
                             stop("video file ", thisf, " does not exist, not handled yet")
                         }
                     }
-                    meta_video$video_src <- file.path(app_data$video_server_url, basename(meta_video$file))
+                    ## windows causes us headaches here, because we can only symlink directories (not files), see above
+                    ## so we have to symlink the directory containing each video file
+                    ## that symlink will be given the hashed name of the file itself
+                    name_hashes <- vapply(basename(meta_video$file), digest::digest, algo = "sha1", FUN.VALUE = "")
+                    ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
+                    meta_video$video_src <- paste_url(app_data$video_server_url, name_hashes, basename(meta_video$file))
                     ## replace URLs with verbatim copy of original info
                     meta_video$video_src[is_url] <- meta_video$file[is_url]
                 } else if (is.function(app_data$video_serve_method)) {

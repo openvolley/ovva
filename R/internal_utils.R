@@ -1,3 +1,9 @@
+paste_url <- function(...) {
+    ## build URL from parts with / as separator, taking care to strip those before we start
+    parts <- lapply(list(...), function(z) sub("^/", "", sub("/$", "", z)))
+    do.call(paste, c(parts, list(sep = "/")))
+}
+
 `%eq%` <- function (x, y) x == y & !is.na(x) & !is.na(y)
 
 single_value_or_na <- function(x) if (length(x) == 1) x else NA
