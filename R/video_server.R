@@ -20,20 +20,17 @@ ovva_video_server <- function(method, port) {
     video_server_dir <- tempfile()
     dir.create(video_server_dir)
     if (method == "lighttpd") {
-        have_lighttpd <- FALSE
-        if (.Platform$OS.type == "unix") {
-            tryCatch({
-                chk <- sys::exec_internal("lighttpd", "-version")
-                have_lighttpd <- TRUE
-            }, error = function(e) warning("could not find the lighttpd executable, install it with e.g. 'apt install lighttpd'. Using \"servr\" video option"))
-            }
-        if (!have_lighttpd) method <- "servr"
+        lighttpd_path <- ovva_find_lighttpd()
+        if (is.null(lighttpd_path)) {
+            warning("could not find the lighttpd executable, try `ovva_install_lighttpd()`. Using \"servr\" video option")
+            method <- "servr"
+        }
     }
     if (method == "lighttpd") {
         ## build config file to pass to lighttpd
         lighttpd_conf_file <- tempfile(fileext = ".conf")
         cat("server.document-root = \"", video_server_dir, "\"\nserver.port = \"", port, "\"\n", sep = "", file = lighttpd_conf_file, append = FALSE)
-        lighttpd_pid <- sys::exec_background("lighttpd", c("-D", "-f", lighttpd_conf_file), std_out = FALSE) ## start lighttpd not in background mode
+        lighttpd_pid <- sys::exec_background(lighttpd_path, c("-D", "-f", lighttpd_conf_file), std_out = FALSE) ## start lighttpd not in background mode
         message("Serving the directory ", video_server_dir, " at http://127.0.0.1:", port)
         cleanup_fun <- function() {
             message("cleaning up lighttpd")
