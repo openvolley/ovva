@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>The default handler for highlights within the shiny app — ovva_highlight_handler • ovva</title>
+<title>Install lighttpd — ovva_install_lighttpd • ovva</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="The default handler for highlights within the shiny app — ovva_highlight_handler" />
-<meta property="og:description" content="You can cook up your own version of this function to suit your liking, and pass it as the highlight_handler parameter to ovva_shiny." />
+<meta property="og:title" content="Install lighttpd — ovva_install_lighttpd" />
+<meta property="og:description" content="This is a helper function to install lighttpd. Currently it only works on Windows platforms. The lighttpd bundle will be downloaded from http://lighttpd.dtech.hu/ and saved to your user appdata directory." />
 
 
 
@@ -108,25 +108,39 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>The default handler for highlights within the shiny app</h1>
-    <small class="dont-index">Source: <a href='https://github.com/openvolley/ovva/blob/master/R/playlist.R'><code>R/playlist.R</code></a></small>
-    <div class="hidden name"><code>ovva_highlight_handler.Rd</code></div>
+    <h1>Install lighttpd</h1>
+    <small class="dont-index">Source: <a href='https://github.com/openvolley/ovva/blob/master/R/lighttpd.R'><code>R/lighttpd.R</code></a></small>
+    <div class="hidden name"><code>ovva_install_lighttpd.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>You can cook up your own version of this function to suit your liking, and pass it as the <code>highlight_handler</code> parameter to <code><a href='ovva_shiny.html'>ovva_shiny</a></code>.</p>
+    <p>This is a helper function to install lighttpd. Currently it only works on Windows platforms. The lighttpd bundle will be downloaded from <a href='http://lighttpd.dtech.hu/'>http://lighttpd.dtech.hu/</a> and saved to your user appdata directory.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>ovva_highlight_handler</span><span class='op'>(</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>ovva_install_lighttpd</span><span class='op'>(</span>force <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>force</th>
+      <td><p>logical: force reinstallation if lighttpd already exists</p></td>
+    </tr>
+    </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A tibble, with columns 'skill', 'specific', and 'fun'. Each row defines a playlist entry that corresponds to specific match conditions. This playlist entry is referred to by the name given in <code>specific</code>, and applies to the skill in column <code>skill</code>. The corresponding entry in <code>fun</code> should be a function that takes three arguments (<code>x</code>, the play-by-play data; <code>team</code>, the team names to look for, and <code>player</code>, the player names to look for) and returns the subset of rows of <code>x</code> that correspond to the playlist conditions.</p>
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+    <p>the path to the installed executable</p>
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
-    <div class='dont-index'><p><code><a href='ovva_shiny.html'>ovva_shiny</a></code></p></div>
+    <p><a href='http://lighttpd.dtech.hu/'>http://lighttpd.dtech.hu/</a></p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='fu'>ovva_install_lighttpd</span><span class='op'>(</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

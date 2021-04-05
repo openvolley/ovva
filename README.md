@@ -15,7 +15,7 @@ status](https://travis-ci.org/openvolley/ovva.svg?branch=master)](https://travis
 
 This R package provides a shiny app for viewing volleyball match videos
 in conjunction with scout files. At this stage it is still somewhat
-experimental. Beware\!
+experimental. Beware!
 
 ## Live demo
 
@@ -48,11 +48,11 @@ Or start the shiny app with the path to your DataVolley files:
 ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
 ```
 
------
+------------------------------------------------------------------------
 
 ![](man/figures/ovva.gif)
 
------
+------------------------------------------------------------------------
 
 ### Notes
 
@@ -61,19 +61,19 @@ ovva_shiny(data_path = c(PL2018 = "data/volley/PlusLiga-2018_19"))
     check this by inspecting the dvw file in a text editor — you should
     see something like:
 
-<!-- end list -->
+<!-- -->
 
     [3RESERVE]
     [3VIDEO]
     Camera0=D:\video\2019_03_01-KATS-BEDS.mp4
     [3SCOUT]
 
-2.  If your videos are hosted online, you don’t need them locally. This
+1.  If your videos are hosted online, you don’t need them locally. This
     includes YouTube videos (they must be either ‘public’ or ‘unlisted’,
     but not ‘private’). To use an online video, enter the URL as the
     video location:
 
-<!-- end list -->
+<!-- -->
 
     [3RESERVE]
     [3VIDEO]
@@ -89,14 +89,16 @@ ovva_shiny(data_path = c(MyData = "my/dvw/path"), video_server = "none")
 (note that with remote video files you still need your dvw files locally
 — this is the `data_path` folder above).
 
-3.  The video server runs in a separate thread to the shiny application
+1.  The video server runs in a separate thread to the shiny application
     itself. If the `lighttpd` executable is present on the system path,
     this will be used for serving videos by default, otherwise the
     `servr` R package will be used. The performance of `lighttpd` is
     better, so you might want to install this if you don’t already have
-    it: <https://www.lighttpd.net/download/>
+    it. On Windows, you can use `ovva_install_lighttpd()` to do this. On
+    other platforms, you’ll have to do it yourself. See
+    <https://www.lighttpd.net/download/>.
 
------
+------------------------------------------------------------------------
 
 Interested in this but you aren’t an R user, or you want to be able to
 easily share this functionality with your players or coaches? See [this
