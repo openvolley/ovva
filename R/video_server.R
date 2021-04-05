@@ -22,7 +22,7 @@ ovva_video_server <- function(method, port) {
     if (method == "lighttpd") {
         lighttpd_path <- ovva_find_lighttpd()
         if (is.null(lighttpd_path)) {
-            warning("could not find the lighttpd executable, try `ovva_install_lighttpd()`. Using \"servr\" video option")
+            message("could not find the lighttpd executable, try `ovva_install_lighttpd()`. Using \"servr\" video option")
             method <- "servr"
         }
     }
