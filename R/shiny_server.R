@@ -681,9 +681,9 @@ ovva_shiny_server <- function(app_data) {
                 ## TODO also check for mixed sources, which we can't handle yet
                 video_player_type(vpt)
                 if (!is.null(input$highlight_list)) {
-                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("subtitle", plays_cols_to_show))
+                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
                 } else {
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("subtitle", "subtitleskill", plays_cols_to_show))
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
                 }
                 pl <- pl[!is.na(pl$start_time) & !is.na(pl$duration), ]
                 ## also keep track of actual file paths
