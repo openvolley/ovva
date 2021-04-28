@@ -34,7 +34,7 @@ ovva_install_lighttpd <- function(force = FALSE) {
     zipname <- file.path(path, paste0("lighttpd-1.4.49-1-win", bits, "-ssl.zip"))
     wgurl <- paste0("http://lighttpd.dtech.hu/", basename(zipname))
     err <- utils::download.file(wgurl, destfile = zipname, mode = "wb")
-    if (!err) utils::unzip(zipname, exdir = dirname(path))
+    if (!err) utils::unzip(zipname, exdir = path)
     ## now we should see the executable
     chk <- ovva_find_lighttpd()
     if (!is.null(chk)) chk else stop("Sorry, lighttpd install failed. You will need to install it yourself and ensure that it is on the system path.")
@@ -47,7 +47,10 @@ ovva_find_lighttpd <- function() {
     chk <- Sys.which(exe_name)
     if (nzchar(chk)) return(chk)
     ## is it installed in user appdir?
-    chk <- file.path(ovva_app_dir(), "lighttpd", exe_name)
-    if (file.exists(chk)) chk else NULL
+    mydir <- file.path(ovva_app_dir(), "lighttpd")
+    if (!dir.exists(mydir)) return(NULL)
+    chk <- fs::dir_ls(path = mydir, recurse = TRUE, regexp = paste0(exe_name, "$"), type = "file")
+    chk <- chk[basename(chk) == exe_name]
+    if (length(chk) == 1 && file.exists(chk)) chk else NULL
 }
 
