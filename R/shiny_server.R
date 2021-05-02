@@ -59,95 +59,101 @@ ovva_shiny_server <- function(app_data) {
             updateSelectInput(session, "season", choices = chc, selected = sel)
         })
         ## play-by-play data for selected season
+        meta_unfiltered <- reactiveVal(NULL)
         pbp <- reactiveVal(NULL)
         pbp_augment <- reactiveVal(NULL)
         got_no_video <- reactiveVal(FALSE)
         season_data_type <- reactiveVal("indoor")
+        video_list <- reactiveVal(dplyr::tibble(match_id = character(), video = character()))
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
-                if (trace_execution) message("recalculating meta")
-                showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
-                if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
-                    ## use allmeta.rds if available
-                    tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
-                    out <- lapply(tmp, function(z) z$meta)
-                } else {
-                    myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
-                    dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
-                    dvargs$metadata_only <- TRUE
-                    out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
-                                                           pv_read(z)$meta
-                                                       } else {
-                                                           dvargs$filename <- z
-                                                           do.call(dv_read, dvargs)$meta
-                                                       })
-                }
-                if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
-                    try(out <- lapply(out, app_data$meta_preprocess))
-                }
-                ## check for duplicate match IDs - these could have different video files, which is too much hassle to handle
-                if (any(duplicated(lapply(out, function(z) z$match_id)))) {
-                    output$processing_note <- renderUI(tags$div(class = "alert alert-danger", "There are duplicate match IDs"))
-                    out <- NULL
-                } else {
-                    output$processing_note <- renderUI(NULL)
-                }
-                ## out is a list of metadata objects
-                ## prune out any that don't have video
-                if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
-                if (length(out) < 1) {
-                    got_no_video(TRUE)
-                    pbp(NULL)
-                    pbp_augment(NULL)
-                    out <- NULL
-                    season_data_type("indoor") ## default
-                } else {
-                    season_data_type(tryCatch(if (grepl("beach", out[[1]]$match$regulation)) "beach" else "indoor", error = function(e) "indoor"))
-                    ## for each video file, check if it exists and try and find it if not
-                    for (z in seq_along(out)) {
-                        if (is_youtube_id(out[[z]]$video$file) || grepl("^https?://", out[[z]]$video$file, ignore.case = TRUE)) {
-                            ## do nothing
-                        } else {
-                            try({
-                                if (isTRUE(app_data$video_subtree_only)) {
-                                    out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
-                                } else {
-                                    temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
-                                    out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
-                                }
-                            })
-                        }
+                isolate({
+                    if (trace_execution) message("recalculating meta")
+                    showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                    if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
+                        ## use allmeta.rds if available
+                        tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
+                        out <- lapply(tmp, function(z) z$meta)
+                    } else {
+                        myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                        dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
+                        dvargs$metadata_only <- TRUE
+                        out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
+                                                               pv_read(z)$meta
+                                                           } else {
+                                                               dvargs$filename <- z
+                                                               do.call(dv_read, dvargs)$meta
+                                                           })
                     }
-                    ## remove any files with no associated video
-                    out <- Filter(Negate(is.null), lapply(out, function(z) if (nrow(z$video) == 1 && !is.na(z$video$file) && nzchar(z$video$file)) z))
+                    if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
+                        try(out <- lapply(out, app_data$meta_preprocess))
+                    }
+                    ## check for duplicate match IDs - these could have different video files, which is too much hassle to handle
+                    if (any(duplicated(lapply(out, function(z) z$match_id)))) {
+                        output$processing_note <- renderUI(tags$div(class = "alert alert-danger", "There are duplicate match IDs"))
+                        out <- NULL
+                    } else {
+                        output$processing_note <- renderUI(NULL)
+                    }
+                    meta_unfiltered(out)
+                    ## out is a list of metadata objects
+                    ## prune out any that don't have video
+                    if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
                     if (length(out) < 1) {
-                        ## no files with video
                         got_no_video(TRUE)
                         pbp(NULL)
                         pbp_augment(NULL)
                         out <- NULL
+                        season_data_type("indoor") ## default
                     } else {
-                        got_no_video(FALSE)
-                        ## now process pbp()
-                        my_match_ids <- as.character(lapply(out, function(z) z$match_id))
-                        showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
-                        if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
-                            ## use alldata.rds if available
-                            mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
-                        } else {
-                            myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
-                            dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
-                            if (!"skill_evaluation_decode" %in% names(dvargs)) dvargs$skill_evaluation_decode <- "guess"
-                            mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) {
-                                                                               pv_read(z)$plays
-                                                                           } else {
-                                                                               dvargs$filename <- z
-                                                                               do.call(dv_read, dvargs)$plays
-                                                                           }))
+                        season_data_type(tryCatch(if (grepl("beach", out[[1]]$match$regulation)) "beach" else "indoor", error = function(e) "indoor"))
+                        ## for each video file, check if it exists and try and find it if not
+                        for (z in seq_along(out)) {
+                            if (is_youtube_id(out[[z]]$video$file) || grepl("^https?://", out[[z]]$video$file, ignore.case = TRUE)) {
+                                ## do nothing
+                            } else {
+                                try({
+                                    if (isTRUE(app_data$video_subtree_only)) {
+                                        out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
+                                    } else {
+                                        temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
+                                        out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                                    }
+                                })
+                            }
                         }
-                        mydat <- mydat[mydat$match_id %in% my_match_ids, ]
-                        mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
+                        ## keep track of videos
+                        video_list(bind_rows(lapply(out, function(z) list(match_id = z$match_id, filename = z$filename, video_source = if (nrow(z$video) == 1 && !is.na(z$video$file) && nzchar(z$video$file)) z$video$file else NA_character_))))
+                        ## remove any files with no associated video
+                        out <- Filter(Negate(is.null), lapply(out, function(z) if (nrow(z$video) == 1 && !is.na(z$video$file) && nzchar(z$video$file)) z))
+                        if (length(out) < 1) {
+                            ## no files with video
+                            got_no_video(TRUE)
+                            pbp(NULL)
+                            pbp_augment(NULL)
+                            out <- NULL
+                        } else {
+                            got_no_video(FALSE)
+                            ## now process pbp()
+                            my_match_ids <- as.character(lapply(out, function(z) z$match_id))
+                            showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                            if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
+                                ## use alldata.rds if available
+                                mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
+                            } else {
+                                myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                                dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
+                                if (!"skill_evaluation_decode" %in% names(dvargs)) dvargs$skill_evaluation_decode <- "guess"
+                                mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) {
+                                                                                   pv_read(z)$plays
+                                                                               } else {
+                                                                                   dvargs$filename <- z
+                                                                                   do.call(dv_read, dvargs)$plays
+                                                                               }))
+                            }
+                            mydat <- mydat[mydat$match_id %in% my_match_ids, ]
+                            mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
 ##                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
 ##                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
 ##                        mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
@@ -155,19 +161,23 @@ ovva_shiny_server <- function(app_data) {
 ##                        ## de-duplicate game_ids
 ##                        dedup <- mutate(distinct(dplyr::select(mydat, .data$match_id, .data$game_id)), game_id = make.unique(.data$game_id, sep = "_"))
 ##                        mydat <- left_join(dplyr::select(mydat, -"game_id"), dedup, by = "match_id")
-                        pbp(mydat)
-                        ## Augment pbp with additional covariates
-                        pbp_augment(preprocess_data(mydat, data_type = season_data_type()))
+                            pbp(mydat)
+                            ## Augment pbp with additional covariates
+                            pbp_augment(preprocess_data(mydat, data_type = season_data_type()))
+                        }
                     }
-                }
-                removeModal()
-                have_done_startup(TRUE)
+                    removeModal()
+                    have_done_startup(TRUE)
+                })
                 out
             } else {
-                got_no_video(FALSE)
-                pbp(NULL)
-                pbp_augment(NULL)
-                season_data_type("indoor") ## default
+                isolate({
+                    got_no_video(FALSE)
+                    meta_unfiltered(NULL)
+                    pbp(NULL)
+                    pbp_augment(NULL)
+                    season_data_type("indoor") ## default
+                })
                 NULL
             }
         })
