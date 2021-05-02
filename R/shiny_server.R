@@ -64,7 +64,7 @@ ovva_shiny_server <- function(app_data) {
         pbp_augment <- reactiveVal(NULL)
         got_no_video <- reactiveVal(FALSE)
         season_data_type <- reactiveVal("indoor")
-        video_list <- reactiveVal(dplyr::tibble(match_id = character(), video = character()))
+        video_list <- reactiveVal(dplyr::tibble(match_id = character(), filename = character(), video_source = character()))
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
