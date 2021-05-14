@@ -25,7 +25,7 @@ ovva_shiny_server <- function(app_data) {
             "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
             "Receiving player" = "receiving_player", "Reception grade" = "reception_grade",
-            Setter = "setter", "Opposition setter" = "opposition_setter", "Opposition team" = "opposition_team")
+            "Setter on court" = "setter_on_court", "Opposition setter on court" = "opposition_setter_on_court", "Opposition team" = "opposition_team")
 
         ## some inits
         master_playstable_selected_row <- -99L ## non-reactive
@@ -327,7 +327,7 @@ ovva_shiny_server <- function(app_data) {
                 avail <- adfilter_cols_to_show[adfilter_cols_to_show %in% avail] ## only those in our pre-defined list of adfilter_cols_to_show
                 ## also refine by data_type
                 if (grepl("beach", season_data_type())) {
-                    avail <- avail[!avail %in% c("set_code", "set_description", "home_setter_position", "visiting_setter_position", "opposition_setter_position", "receiving_setter_position", "serving_setter_position", "setter_position", "setter", "opposition_setter")]
+                    avail <- avail[!avail %in% c("set_code", "set_description", "home_setter_position", "visiting_setter_position", "opposition_setter_position", "receiving_setter_position", "serving_setter_position", "setter_position", "setter_on_court", "opposition_setter_on_court")]
                 }
                 avail <- avail[order(names(avail))]
                 c(list("No filter" = ""), avail) ## add a "no filter" option

@@ -39,8 +39,8 @@ preprocess_data <- function(x, data_type = "indoor") {
         x <- left_join(x, rpx, by = c("match_id", "point_id"))
     }
     if (grepl("indoor", data_type)) {
-        if (!all(c("setter", "opposition_setter") %in% names(x))) {
-            x <- x[, setdiff(names(x), c("setter", "opposition_setter"))]
+        if (!all(c("setter_on_court", "opposition_setter_on_court") %in% names(x))) {
+            x <- x[, setdiff(names(x), c("setter_on_court", "opposition_setter_on_court"))]
             x <- mutate(x, home_setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
                                                       .data$home_setter_position == 2 ~ .data$home_player_id2,
                                                       .data$home_setter_position == 3 ~ .data$home_player_id3,
@@ -59,8 +59,8 @@ preprocess_data <- function(x, data_type = "indoor") {
                                                          .data$team %eq% .data$home_team ~ .data$visiting_setter_id))
             px <- na.omit(distinct(x[, c("player_id", "player_name")]))
             px <- px[!px$player_id %in% px$player_id[duplicated(px$player_id)], ]
-            x <- left_join(x, dplyr::rename(px, setter = "player_name"), by = c(setter_id = "player_id"))
-            x <- left_join(x, dplyr::rename(px, opposition_setter = "player_name"), by = c(opposition_setter_id = "player_id"))
+            x <- left_join(x, dplyr::rename(px, setter_on_court = "player_name"), by = c(setter_id = "player_id"))
+            x <- left_join(x, dplyr::rename(px, opposition_setter_on_court = "player_name"), by = c(opposition_setter_id = "player_id"))
         }
         if (!"receiving_setter_position" %in% names(x)) {
             x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team %eq% .data$home_team ~ .data$home_setter_position,
