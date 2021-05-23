@@ -777,12 +777,12 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         output$player_controls_ui <- renderUI({
-            tags$div(tags$div(tags$button("Play", onclick = "dvpl.video_play();"),
-                              tags$button("Prev", onclick = "dvpl.video_prev();"),
-                              tags$button("Next", onclick = "dvpl.video_next(false);"),
-                              tags$button("Pause", onclick = "dvpl.video_pause();"),
-                              tags$button("Back 1s", onclick = "dvpl.jog(-1);"),
-                              tags$button("Show fullscreen", onclick = "dvpl.fullscreen();"),
+            tags$div(tags$div(class = "player_controls", tags$button(tags$span(icon("play-circle")), onclick = "dvpl.video_play();", title = "Play"),
+                              tags$button(tags$span(icon("step-backward")), onclick = "dvpl.video_prev();", title = "Previous"),
+                              tags$button(tags$span(icon("step-forward")), onclick = "dvpl.video_next(false);", title = "Next"),
+                              tags$button(tags$span(icon("pause-circle")), onclick = "dvpl.video_pause();", title = "Pause"),
+                              tags$button(tags$span(icon("backward"), " 1s"), onclick = "dvpl.jog(-1);", title = "Back 1 second"),
+                              tags$button(tags$span(icon("expand")), onclick = "dvpl.fullscreen();", title = "Full screen")
                               ),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))

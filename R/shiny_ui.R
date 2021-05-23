@@ -4,7 +4,7 @@ ovva_shiny_ui <- function(app_data) {
         ovideo::ov_video_js(youtube = TRUE, version = 2),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
-                 tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;}"),
+                 tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;} .player_controls button {font-size: large; padding-top: 2px; padding-bottom: 2px; padding-left: 1em; padding-right: 1em; border-radius: 6px; } .player_controls .fa {line-height: inherit;}"),
                  tags$style("#video_overlay, #video_overlay_img { position:absolute; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
                  if (!is.null(app_data$css)) tags$style(app_data$css),
                  tags$script("$(document).on('shiny:sessioninitialized', function() { $('#video_overlay_img').hide(); });")
@@ -145,6 +145,7 @@ tags$table(tags$tr(tags$th(),
                    timing_tdur("Freeball", "Reception"),
                    timing_tdur("Freeball", "Transition"))
            ),
+tags$div(style = "display:none;", icon("question-circle")), ## to ensure that font-awesome dependency is included
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
