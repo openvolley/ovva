@@ -70,7 +70,7 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$season) && input$season %in% season_choices()) {
                 isolate({
                     if (trace_execution) message("recalculating meta")
-                    showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                    showModal(modalDialog(title = "Processing match metadata ...", footer = NULL, "Please wait"))
                     if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                         ## use allmeta.rds if available
                         tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
@@ -137,7 +137,7 @@ ovva_shiny_server <- function(app_data) {
                             got_no_video(FALSE)
                             ## now process pbp()
                             my_match_ids <- as.character(lapply(out, function(z) z$match_id))
-                            showModal(modalDialog(title = "Processing data ...", footer = NULL, "Please wait"))
+                            showModal(modalDialog(title = "Processing match data ...", footer = NULL, "Please wait"))
                             if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
                                 ## use alldata.rds if available
                                 mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
@@ -781,7 +781,9 @@ ovva_shiny_server <- function(app_data) {
                               tags$button("Prev", onclick = "dvpl.video_prev();"),
                               tags$button("Next", onclick = "dvpl.video_next(false);"),
                               tags$button("Pause", onclick = "dvpl.video_pause();"),
-                              tags$button("Back 1s", onclick = "dvpl.jog(-1);")),
+                              tags$button("Back 1s", onclick = "dvpl.jog(-1);"),
+                              tags$button("Show fullscreen", onclick = "dvpl.fullscreen();"),
+                              ),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))
         })
