@@ -3,3 +3,4 @@
 ^README\.html$
 ^\.travis\.yml$
 docs/
+^\.github$
