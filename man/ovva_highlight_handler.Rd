@@ -2,15 +2,25 @@
 % Please edit documentation in R/playlist.R
 \name{ovva_highlight_handler}
 \alias{ovva_highlight_handler}
+\alias{ovva_highlight_weighting}
 \title{The default handler for highlights within the shiny app}
 \usage{
-ovva_highlight_handler()
+ovva_highlight_handler(clip_duration = 180)
+
+ovva_highlight_weighting(weights)
+}
+\arguments{
+\item{clip_duration}{numeric: the maximum highlight clip length in seconds}
+
+\item{weights}{data.frame: a data.frame or tibble with columns \code{skill}, \code{evaluation_code}, and \code{highlight_weighting}. Any values provided here will override the corresponding defaults
+
+You can cook up your own version of this highlight handler function to suit your liking, and pass it as the \code{highlight_handler} parameter to \code{\link{ovva_shiny}}.}
 }
 \value{
 A tibble, with columns 'skill', 'specific', and 'fun'. Each row defines a playlist entry that corresponds to specific match conditions. This playlist entry is referred to by the name given in \code{specific}, and applies to the skill in column \code{skill}. The corresponding entry in \code{fun} should be a function that takes three arguments (\code{x}, the play-by-play data; \code{team}, the team names to look for, and \code{player}, the player names to look for) and returns the subset of rows of \code{x} that correspond to the playlist conditions.
 }
 \description{
-You can cook up your own version of this function to suit your liking, and pass it as the \code{highlight_handler} parameter to \code{\link{ovva_shiny}}.
+\code{ovva_highlight_handler} provides functions that create highlight playlists. Highlights are judged according to the weighting scheme defined by \code{ovva_highlight_weighting}.
 }
 \seealso{
 \code{\link{ovva_shiny}}
