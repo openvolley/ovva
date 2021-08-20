@@ -36,7 +36,7 @@ ovva_shiny_server <- function(app_data) {
             ## return a list of functions
             app_data$playlist_handler$fun[which(app_data$playlist_handler$specific %in% specific)]
         }
-        funs_from_highlight<- function(specific) {
+        funs_from_highlight <- function(specific) {
             ## return a list of functions
             app_data$highlight_handler$fun[which(app_data$highlight_handler$specific %in% specific)]
         }
@@ -440,17 +440,10 @@ ovva_shiny_server <- function(app_data) {
                 filterB_var <- input$adFilterB_list
                 playlist_select <- input$playlist_list
                 highlight_select <- input$highlight_list
-                if (!is.null(playlist_select) && !is.null(skill_select) && !is.null(game_select) && !is.null(player_select) && !is.null(team_select)) {
-                    myfuns <- funs_from_playlist(playlist_select)
-                    if (length(game_select) == 1) {
-                        ## apply each of myfuns in turn and rbind the results
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% game_select), team = team_select, player = player_select)))
-                    } else{
-                        pbp_tmp <- dplyr::filter(pbp, .data$match_id %in% game_select)
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
-                    }
-                } else if (!is.null(highlight_select) & !is.null(game_select)) {
-                    myfuns <- funs_from_highlight(highlight_select)
+                was_playlist <- !is.null(playlist_select) && !is.null(skill_select) && !is.null(game_select) && !is.null(player_select) && !is.null(team_select)
+                was_highlight <- !is.null(highlight_select) & !is.null(game_select)
+                if (was_playlist || was_highlight) {
+                    myfuns <- if (was_playlist) funs_from_playlist(playlist_select) else funs_from_highlight(highlight_select)
                     if (length(game_select) == 1) {
                         ## apply each of myfuns in turn and rbind the results
                         pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% game_select), team = team_select, player = player_select)))
@@ -627,7 +620,8 @@ ovva_shiny_server <- function(app_data) {
                     ## windows causes us headaches here, because we can only symlink directories (not files), see above
                     ## so we have to symlink the directory containing each video file
                     ## that symlink will be given the hashed name of the video directory
-                    path_hashes <- vapply(fs::path_dir(fs::path_real(meta_video$file)), digest::digest, algo = "sha1", FUN.VALUE = "")
+                    path_hashes <- rep("", length(video_meta$file))
+                    path_hashes[!is_url] <- vapply(fs::path_dir(fs::path_real(video_meta$file[!is_url])), digest::digest, algo = "sha1", FUN.VALUE = "")
 
                     ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
                     meta_video$video_src <- paste_url(app_data$video_server_url, path_hashes, basename(meta_video$file))
@@ -637,14 +631,12 @@ ovva_shiny_server <- function(app_data) {
                     if (nrow(meta_video) > 0) {
                         ## block user interaction while this happens
                         showModal(modalDialog(title = "Please wait", size = "l", footer = NULL))
-                        meta_video$video_src <- tryCatch({
-                            shiny::withProgress(message = "Processing video files", {
-                                vapply(seq_len(nrow(meta_video)), function(z) {
-                                    shiny::setProgress(value = z/nrow(meta_video))
-                                    app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z])
-                                }, FUN.VALUE = "", USE.NAMES = FALSE)
-                            })
-                        }, error = function(e) character())
+                        shiny::withProgress(message = "Processing video files", {
+                            meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) {
+                                shiny::setProgress(value = z/nrow(meta_video))
+                                tryCatch(app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), error = function(e) NA_character_)
+                            }, FUN.VALUE = "", USE.NAMES = FALSE)
+                        })
                         removeModal()
                     } else {
                         meta_video$video_src <- character()
@@ -692,7 +684,8 @@ ovva_shiny_server <- function(app_data) {
                 ## TODO also check for mixed sources, which we can't handle yet
                 video_player_type(vpt)
                 if (!is.null(input$highlight_list)) {
-                    pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
+                    ##pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
+                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
                 } else {
                     pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
                 }
