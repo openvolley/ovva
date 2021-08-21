@@ -269,7 +269,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Highlights
         highlight_list = reactive({
-            app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"]
+            c("None", app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"])
         })
         output$highlight_based_ui <- renderUI({
                 if (length(selected_match_id()) < 1) {
@@ -283,7 +283,7 @@ ovva_shiny_server <- function(app_data) {
                             choices = highlight_list(),
                             selected = sel,
                             options = list(`actions-box` = TRUE),
-                            multiple = TRUE)
+                            multiple = FALSE)
             }
         })
 
@@ -441,7 +441,7 @@ ovva_shiny_server <- function(app_data) {
                 playlist_select <- input$playlist_list
                 highlight_select <- input$highlight_list
                 was_playlist <- !is.null(playlist_select) && !is.null(skill_select) && !is.null(game_select) && !is.null(player_select) && !is.null(team_select)
-                was_highlight <- !is.null(highlight_select) & !is.null(game_select)
+                was_highlight <- !is.null(highlight_select) && !highlight_select %eq% "None" && !is.null(game_select)
                 if (was_playlist || was_highlight) {
                     myfuns <- if (was_playlist) funs_from_playlist(playlist_select) else funs_from_highlight(highlight_select)
                     if (length(game_select) == 1) {
