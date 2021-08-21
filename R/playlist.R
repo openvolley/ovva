@@ -121,11 +121,11 @@ ovva_highlight_handler <- function(clip_duration = 180) {
         }
     }
     out$fun[[which(out$skill == "Highlights" & out$specific == "Player")]] <- function(x, team,  player) {
-        if (missing(player) || is.null(player)) {
+        if (missing(player) || length(player) < 0) {
             return(x[c(), ])
         } else {
             x_tmp <- dplyr::filter(dplyr::left_join(x, wfpm, by = c("skill", "evaluation_code")), !is.na(.data$video_time))
-            x_tmp$highlight_weighting[x_tmp$player_name %eq% player] <- x_tmp$highlight_weighting[x_tmp$player_name %eq% player] * 2
+            x_tmp$highlight_weighting[x_tmp$player_name %in% player] <- x_tmp$highlight_weighting[x_tmp$player_name %in% player] * 2
             x_tmp <- dplyr::summarize(dplyr::group_by(x_tmp, .data$match_id, .data$point_id), WFP = sum(.data$highlight_weighting, na.rm = TRUE), duration = diff(range(.data$video_time, na.rm = TRUE)))
             x_tmp <- dplyr::arrange(x_tmp, -.data$WFP, -.data$duration)
             x_tmp$cumsumDur <- cumsum(x_tmp$duration)
