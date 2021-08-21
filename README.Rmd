@@ -33,9 +33,15 @@ Try it for yourself: https://openvolley.shinyapps.io/ovva_demo/
 
 ## Installation
 
-You can install from [GitHub](https://github.com/openvolley/ovva) with:
+```{r eval=FALSE}
 
-```{r eval = FALSE}
+options(repos = c(openvolley = "https://openvolley.r-universe.dev",
+                  CRAN = "https://cloud.r-project.org"))
+
+install.packages("ovva")
+
+## or
+
 ## install.packages("remotes") ## if needed
 remotes::install_github("openvolley/ovva")
 

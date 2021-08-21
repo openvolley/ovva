@@ -26,9 +26,14 @@ not be available if too many people have used it recently.)
 
 ## Installation
 
-You can install from [GitHub](https://github.com/openvolley/ovva) with:
-
 ``` r
+options(repos = c(openvolley = "https://openvolley.r-universe.dev",
+                  CRAN = "https://cloud.r-project.org"))
+
+install.packages("ovva")
+
+## or
+
 ## install.packages("remotes") ## if needed
 remotes::install_github("openvolley/ovva")
 ```
