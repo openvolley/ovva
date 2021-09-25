@@ -5,6 +5,7 @@
 #' @param highlight_handler tibble: a tibble that provides playlist handler capabilities (see \code{\link{ovva_highlight_handler}} for details)
 #' @param video_server string or function: if string, either "lighttpd", "servr", or "none". If a function, it will be used to modify the video file path present in each dvw file. Details TBD
 #' @param launch_browser logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter). If \code{NULL}, don't launch the app, just return the \code{shinyApp} object
+#' @param video_timing_df data.frame: data.frame of default clip timings
 #' @param ... : additional parameters passed to the UI and server functions
 #'
 #' @seealso \code{\link{ovva_shiny_demo}}
@@ -18,7 +19,7 @@
 #' }
 #'
 #' @export
-ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), highlight_handler = ovva_highlight_handler(), video_server = "lighttpd", launch_browser = TRUE, ...) {
+ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), highlight_handler = ovva_highlight_handler(), video_server = "lighttpd", launch_browser = TRUE, video_timing_df = ov_video_timing_df(), ...) {
     if (!is.null(launch_browser)) assert_that(is.flag(launch_browser), !is.na(launch_browser))
     assert_that(is.data.frame(playlist_handler))
     if (!all(c("skill", "specific", "fun") %in% names(playlist_handler))) stop("playlist_handler must have columns 'skill', 'specific', and 'fun'")
@@ -44,6 +45,9 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), hi
             if (!dir.exists(data_path[z])) stop("the directory '", data_path[z], "' does not exist")
         }
     }
+    if (!check_timing_df(video_timing_df)) {
+        stop("video_timing_df should be a data.frame, with the same structure as returned by ov_video_timing_df()")
+    }
     ## sort out the video server
     if (is.function(video_server) || (is.string(video_server) && video_server == "none")) {
         vsrv <- list(method = video_server, url = NULL, dir = NULL)
@@ -51,7 +55,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), hi
         vsrv <- ovva_video_server(method = video_server)
         onStop(function() try({ vsrv$cleanup_fun() }, silent = TRUE))
     }
-    app_data <- c(list(data_path = data_path, playlist_handler = playlist_handler, highlight_handler = highlight_handler, video_serve_method = vsrv$method, video_server_dir = vsrv$dir, video_server_url = vsrv$url), list(...))
+    app_data <- c(list(data_path = data_path, playlist_handler = playlist_handler, highlight_handler = highlight_handler, video_serve_method = vsrv$method, video_server_dir = vsrv$dir, video_server_url = vsrv$url, video_timing_df = video_timing_df), list(...))
     this_app <- list(ui = ovva_shiny_ui(app_data = app_data), server = ovva_shiny_server(app_data = app_data))
     if (!is.null(launch_browser)) {
         shiny::runApp(this_app, display.mode = "normal", launch.browser = launch_browser)

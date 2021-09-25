@@ -696,10 +696,10 @@ ovva_shiny_server <- function(app_data) {
         })
 
         clip_timing <- reactive({
-            ## parse timing from inputs, with fallback to ov_video_timing_df() if it fails
+            ## parse timing from inputs, with fallback to defaults if it fails
+            def0 <- def <- if (check_timing_df(app_data$video_timing_df)) app_data$video_timing_df else ovideo::ov_video_timing_df()
             tryCatch({
                 ## defaults
-                def <- ovideo::ov_video_timing_df()
                 ## need to explicitly list all the inputs to get reactivity, ergh
                 blah <- list(input$timing_serve_serve_start_offset, input$timing_serve_serve_duration,
                              input$timing_reception_reception_start_offset, input$timing_reception_reception_duration,
@@ -719,7 +719,7 @@ ovva_shiny_server <- function(app_data) {
                     def$duration[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_duration")]]
                 }
                 def
-            }, error = function(e) ovideo::ov_video_timing_df())
+            }, error = function(e) def0)
         })
         tweak_all_timings <- function(whch, by) {
             if (whch %in% c("start_offset", "duration") && is.numeric(by)) {

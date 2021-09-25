@@ -177,10 +177,26 @@ introbox_or_div <- function(...) {
     if (requireNamespace("rintrojs", quietly = TRUE)) rintrojs::introBox(...) else tags$div(...)
 }
 
-timing_tstart <- function(skill, phase, start_offset = -5) {
+check_timing_df <- function(x) {
+    isTRUE(is.data.frame(x) && all(c("skill", "phase", "start_offset", "duration") %in% names(x)) && nrow(x) > 0)
+}
+
+timing_tstart <- function(skill, phase, start_offset = -5, timing_df) {
+    if (missing(start_offset) && !missing(timing_df) && check_timing_df(timing_df)) {
+        try({
+            chk <- timing_df$start_offset[timing_df$skill %eq% skill && timing_df$phase %eq% phase]
+            if (length(chk) == 1 && !is.na(chk)) start_offset <- chk
+        })
+    }
     tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset"), label = NULL, value = start_offset, width = "8ex"))
 }
-timing_tdur <- function(skill, phase, duration = 8) {
+timing_tdur <- function(skill, phase, duration = 8, timing_df) {
+    if (missing(duration) && !missing(timing_df) && check_timing_df(timing_df)) {
+        try({
+            chk <- timing_df$duration[timing_df$skill %eq% skill && timing_df$phase %eq% phase]
+            if (length(chk) == 1 && !is.na(chk)) duration <- chk
+        })
+    }
     tags$td(numericInput(paste0("timing_", tolower(skill), "_", tolower(phase), "_duration"), label = NULL, value = duration, width = "8ex"))
 }
 

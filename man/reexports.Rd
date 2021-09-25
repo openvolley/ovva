@@ -4,6 +4,7 @@
 \name{reexports}
 \alias{reexports}
 \alias{dv_read}
+\alias{ov_video_timing_df}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -12,5 +13,7 @@ below to see their documentation.
 
 \describe{
   \item{datavolley}{\code{\link[datavolley:read_dv]{dv_read}}}
+
+  \item{ovideo}{\code{\link[ovideo:ov_video_timing]{ov_video_timing_df}}}
 }}
 
