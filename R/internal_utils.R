@@ -109,9 +109,19 @@ preprocess_data <- function(x, data_type = "indoor") {
 is_youtube_id <- function(z) nchar(z) == 11 & grepl("^[[:alnum:]_\\-]+$", z)
 ## is_youtube_id(c("7DnQWfTJiP4", "qwSIgTaWK5s", "a", "qwSIgTaW-5s", "_qwSIgTaWK5"))
 
+is_twitch_video <- function(z) {
+    if (is.null(z)) {
+        FALSE
+    } else if (!is.character(z)) {
+        rep(FALSE, length(z))
+    } else {
+        grepl("twitch\\.tv", z)
+    }
+}
 
 ## internal function to try and locate a video file, when the path embedded in the dvw file is for another computer
 ## dvw_filename should be full path to file
+## alt_path can be a character vector of one or more alternative paths to search
 find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE, file_extensions = video_file_extensions) {
     stopifnot(length(dvw_filename) == 1) ## single dvw file, but can handle multiple video files
     if (is.null(video_filename)) {
@@ -152,10 +162,17 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
             ff <- look_for_it(video_filename, top_dir = this_dir, ignore_case = ignore_case)
             if (length(ff) ==1) out <- ff
         }
-        if (is.na(out) && !is.null(alt_path) && (fs::dir_exists(alt_path) || fs::link_exists(alt_path))) {
-            ## didn't find it under the subtree, try the alt path
-            ff <- look_for_it(video_filename, top_dir = alt_path, ignore_case = ignore_case)
-            if (length(ff) == 1) out <- ff
+        if (is.na(out) && length(alt_path) > 0) {
+            ## didn't find it under the subtree, try the alt path(s)
+            for (altp in alt_path) {
+                if (fs::dir_exists(altp) || fs::link_exists(altp)) {
+                    ff <- look_for_it(video_filename, top_dir = altp, ignore_case = ignore_case)
+                    if (length(ff) == 1) {
+                        out <- ff
+                        break
+                    }
+                }
+            }
         }
         as.character(out)
     } else {
