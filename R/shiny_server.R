@@ -620,8 +620,8 @@ ovva_shiny_server <- function(app_data) {
                     ## windows causes us headaches here, because we can only symlink directories (not files), see above
                     ## so we have to symlink the directory containing each video file
                     ## that symlink will be given the hashed name of the video directory
-                    path_hashes <- rep("", length(video_meta$file))
-                    path_hashes[!is_url] <- vapply(fs::path_dir(fs::path_real(video_meta$file[!is_url])), digest::digest, algo = "sha1", FUN.VALUE = "")
+                    path_hashes <- rep("", length(meta_video$file))
+                    path_hashes[!is_url] <- vapply(fs::path_dir(fs::path_real(meta_video$file[!is_url])), digest::digest, algo = "sha1", FUN.VALUE = "")
 
                     ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
                     meta_video$video_src <- paste_url(app_data$video_server_url, path_hashes, basename(meta_video$file))
