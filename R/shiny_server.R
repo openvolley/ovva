@@ -678,6 +678,8 @@ ovva_shiny_server <- function(app_data) {
                 ## TODO: if we filter items out here because of missing video times (but not filter from the playstable), doesn't the playstable selected row get out of whack with the actual item being played?
                 vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE) | grepl("https?://youtu\\.be", meta_video$video_src, ignore.case = TRUE))) {
                            "youtube"
+                       } else if (all(is_twitch_video(meta_video$video_src))) {
+                           "twitch"
                        } else {
                            "local"
                        }
@@ -738,7 +740,7 @@ ovva_shiny_server <- function(app_data) {
         observeEvent(input$timing_all_duration_plus, tweak_all_timings("duration", 1))
 
         ## video stuff
-        video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube"
+        video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube" or "twitch"
         observe({
             if (!is.null(playlist()) && nrow(playlist()) > 0) {
                 if (trace_execution) message("reinitializing video player")
@@ -770,12 +772,12 @@ ovva_shiny_server <- function(app_data) {
             }
         })
         output$player_controls_ui <- renderUI({
-            tags$div(tags$div(class = "player_controls", tags$button(tags$span(icon("play-circle")), onclick = "dvpl.video_play();", title = "Play"),
-                              tags$button(tags$span(icon("step-backward")), onclick = "dvpl.video_prev();", title = "Previous"),
-                              tags$button(tags$span(icon("step-forward")), onclick = "dvpl.video_next(false);", title = "Next"),
-                              tags$button(tags$span(icon("pause-circle")), onclick = "dvpl.video_pause();", title = "Pause"),
-                              tags$button(tags$span(icon("backward"), " 1s"), onclick = "dvpl.jog(-1);", title = "Back 1 second"),
-                              tags$button(tags$span(icon("expand")), onclick = "dvpl.fullscreen();", title = "Full screen")
+            tags$div(tags$div(class = "player_controls", tags$button(tags$span(icon("play-circle", style = "vertical-align:middle;")), onclick = "dvpl.video_play();", title = "Play"),
+                              tags$button(tags$span(icon("step-backward", style = "vertical-align:middle;")), onclick = "dvpl.video_prev();", title = "Previous"),
+                              tags$button(tags$span(icon("step-forward", style = "vertical-align:middle;")), onclick = "dvpl.video_next(false);", title = "Next"),
+                              tags$button(tags$span(icon("pause-circle", style = "vertical-align:middle;")), onclick = "dvpl.video_pause();", title = "Pause"),
+                              tags$button(tags$span(icon("backward", style = "vertical-align:middle;"), " 1s"), onclick = "dvpl.jog(-1);", title = "Back 1 second"),
+                              tags$button(tags$span(icon("expand", style = "vertical-align:middle;")), onclick = "dvpl.fullscreen();", title = "Full screen")
                               ),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))
@@ -784,7 +786,7 @@ ovva_shiny_server <- function(app_data) {
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
-            ok <- !is.null(playlist()) && nrow(playlist()) > 0 && video_player_type() != "youtube"
+            ok <- !is.null(playlist()) && nrow(playlist()) > 0 && !video_player_type() %in% c("youtube", "twitch")
             ## also check that videos are not remote
             ok <- ok && !any(grepl("^https?://", playlist()$video_src, ignore.case = TRUE))
             if (ok) {
@@ -854,7 +856,7 @@ ovva_shiny_server <- function(app_data) {
         ## height of the video player element
         vo_height <- reactiveVal("auto")
         observe({
-            my_height <- if (video_player_type() %eq% "youtube") input$dvyt_height else input$dv_height
+            my_height <- if (video_player_type() %in% c("youtube", "twitch")) input$dvyt_height else input$dv_height
             if (!is.null(my_height) && as.numeric(my_height) > 0) {
                 vo_height(as.numeric(my_height))
                 ## +1 because of 1px border on video element
@@ -869,7 +871,7 @@ ovva_shiny_server <- function(app_data) {
         ## width of the video player element
         vo_width <- reactiveVal("auto")
         observe({
-            my_width <- if (video_player_type() %eq% "youtube") input$dvyt_width else input$dv_width
+            my_width <- if (video_player_type() %in% c("youtube", "twitch")) input$dvyt_width else input$dv_width
             if (!is.null(my_width) && as.numeric(my_width) > 0) {
                 vo_width(as.numeric(my_width))
                 evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width()+1, "px';"))

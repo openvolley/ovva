@@ -1,10 +1,10 @@
 ovva_shiny_ui <- function(app_data) {
     fluidPage(
         if (requireNamespace("rintrojs", quietly = TRUE)) rintrojs::introjsUI(),
-        ovideo::ov_video_js(youtube = TRUE, version = 2),
+        ovideo::ov_video_js(youtube = TRUE, twitch = TRUE, version = 2),
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
-                 tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;} .player_controls button {font-size: large; padding-top: 2px; padding-bottom: 2px; padding-left: 1em; padding-right: 1em; border-radius: 6px; } .player_controls .fa {line-height: inherit;}"),
+                 tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;} .player_controls button { font-size:large; padding-top:5px; padding-bottom:5px; padding-left:14px; padding-right:14px; border-radius:8px; margin-left:6px;} .player_controls .fa {line-height: inherit;}"),
                  tags$style("#video_overlay, #video_overlay_img { position:absolute; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
                  if (!is.null(app_data$css)) tags$style(app_data$css),
                  tags$script("$(document).on('shiny:sessioninitialized', function() { $('#video_overlay_img').hide(); });")
@@ -34,7 +34,7 @@ $(document).on('shiny:sessioninitialized', function() {
     }
 });
 function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
-    tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;}")
+tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;}"),
 ),
 shiny::wellPanel(
 fluidRow(column(4, tags$h5("1. Select data"),
@@ -89,7 +89,7 @@ fluidRow(column(4, tags$h5("1. Select data"),
 tags$hr(),
 fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                             ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 90%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
-                            ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden
+                            ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 90%; height: 480px; display:none;"), ## start hidden, note that type = "youtube" also works if we change to twitch
                             tags$img(id = "video_overlay_img")),
                 plotOutput("video_overlay"),
                 uiOutput("player_controls_ui", style = "margin-top: 12px;"),
@@ -149,6 +149,6 @@ tags$div(style = "display:none;", icon("question-circle")), ## to ensure that fo
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
-tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { console.log('dvjs_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { console.log('dvjs_video_onstart'); Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube' || dvpl.video_controller.type == 'twitch') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
 )
 }
