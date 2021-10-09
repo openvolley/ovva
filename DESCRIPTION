@@ -22,7 +22,7 @@ Imports:
     future.apply,
     htmltools,
     methods,
-    ovideo (>= 0.15.0),
+    ovideo (>= 0.15.1),
     peranavolley,
     rappdirs,
     servr (>= 0.15.1),
