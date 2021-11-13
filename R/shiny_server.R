@@ -493,6 +493,7 @@ ovva_shiny_server <- function(app_data) {
 
         output$playstable <- DT::renderDataTable({
             mydat <- playstable_data()
+            scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
                 if (allow_item_deletion) {
                     mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
@@ -507,7 +508,7 @@ ovva_shiny_server <- function(app_data) {
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = max(master_playstable_selected_row, 1L), target = "row"),
-                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = 200, scroller = TRUE, ordering = FALSE,
+                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = scrolly, scroller = TRUE, ordering = FALSE,
                                              initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
             } else {
                 NULL
