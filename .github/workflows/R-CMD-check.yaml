@@ -45,7 +45,7 @@ jobs:
 
       - name: "Install Mac system libs"
         if: runner.os == 'macOS'
-        run: brew install pkg-config gdal libarchive
+        run: brew install pkg-config gdal proj geos libarchive
 
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
