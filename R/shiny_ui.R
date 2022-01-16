@@ -88,7 +88,7 @@ fluidRow(column(4, tags$h5("1. Select data"),
 ),
 tags$hr(),
 fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
-                            ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 100%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();"),
+                            ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 100%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();", onerror = "dv_player_onerror(event);"),
                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 100%; display:none;"), ## start hidden, note that type = "youtube" also works if we change to twitch ## height: 480px;
                             tags$img(id = "video_overlay_img"),
                             tags$div(id = "vwm", tags$img(id = "vwm_img"))
@@ -149,6 +149,7 @@ tags$div(style = "display:none;", icon("question-circle")), ## to ensure that fo
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
+tags$script("dv_player_onerror = function(e) { $('#dv_player').removeClass('loading'); try { var this_src = btoa(document.getElementById(e.target.id).getAttribute('src')); } catch { var this_src = ''; }; Shiny.setInputValue('video_error', e.target.id + '@' + this_src + '@' + e.target.error.code + '@' + new Date().getTime()); }"),
 tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube' || dvpl.video_controller.type == 'twitch') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
 )
 }

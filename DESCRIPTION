@@ -1,6 +1,6 @@
 Package: ovva
 Title: A Shiny App for Volleyball Video Analysis
-Version: 0.8.2
+Version: 0.9.0
 Authors@R: c(person(given = "Adrien", family = "Ickowicz", role = c("aut", "cre"), email = "ickowicz.adrien@gmail.com"),
              person(given = "Ben", family = "Raymond", role = "aut"),
              person("openvolley.org", role = "org"))
@@ -14,6 +14,7 @@ Roxygen: list(markdown = TRUE)
 Depends: datavolley (>= 0.13.0)
 Imports:
     assertthat,
+    base64enc,
     dplyr,
     digest,
     DT,
@@ -21,6 +22,7 @@ Imports:
     future,
     future.apply,
     htmltools,
+    httr,
     methods,
     ovideo (>= 0.15.1),
     peranavolley,
@@ -34,4 +36,4 @@ Suggests:
     rintrojs,
     testthat
 Remotes: openvolley/datavolley, openvolley/ovideo, openvolley/peranavolley
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
