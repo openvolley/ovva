@@ -908,7 +908,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         observeEvent(input$video_error, {
-            vid_err_msgs <- c("video playback was aborted", "a network error caused the video download to fail", "an error occurred while trying to decode the video", "the video could not be loaded, either because the server or network failed or because the format is not supported")
+            vid_err_msgs <- c("video playback was aborted", "a network error caused the video download to fail", "an error occurred while trying to decode the video", "the video could not be loaded or the format is not supported")
             temp <- if (!is.null(input$video_error) && nzchar(input$video_error) && grepl("@", input$video_error)) {
                         tryCatch(strsplit(input$video_error, "@")[[1]], error = function(e) NULL)
                     } else {
@@ -928,7 +928,7 @@ ovva_shiny_server <- function(app_data) {
                 ## status_msg <- tryCatch(httr::http_status(httr::HEAD(this_src))$message, error = function(e) if (grepl("Connection refused", conditionMessage(e), ignore.case = TRUE)) "Connection refused" else NULL)
                 this_src <- tags$a(href = this_src, this_src, target = "_blank")
             }
-            output$video_dialog <- renderUI(tags$div(class = "alert alert-danger", tags$div("Video error ", paste0("(", errmsg, ")"), tags$br(), "Video source: ", this_src)))
+            output$video_dialog <- renderUI(tags$div(class = "alert alert-danger", tags$div("Video error ", paste0("(", errmsg, "). Is the video URL correct?"), tags$br(), "Video source: ", this_src)))
         })
     }
 }
