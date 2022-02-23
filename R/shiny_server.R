@@ -123,7 +123,7 @@ ovva_shiny_server <- function(app_data) {
                                         out[[z]]$video$file <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = TRUE, alt_path = app_data$alt_video_path)
                                     } else {
                                         temp <- find_video_in_subtree(dvw_filename = out[[z]]$filename, video_filename = fs::fs_path(out[[z]]$video$file), subtree_only = FALSE, alt_path = app_data$alt_video_path)
-                                        out[[z]]$video$file <- ifelse(!fs::file_exists(out[[z]]$video$file) && !is.na(temp), temp, out[[z]]$video$file)
+                                        out[[z]]$video$file <- ifelse(!fs::file_exists(as.character(out[[z]]$video$file)) && !is.na(temp), temp, out[[z]]$video$file)
                                     }
                                 })
                             }
@@ -603,7 +603,7 @@ ovva_shiny_server <- function(app_data) {
                     if (length(vf) < 1 && !any(is_url)) return(NULL)
                     ## may have multiple video files at this point
                     for (thisf in unique(vf)) {
-                        if (fs::file_exists(thisf)) {
+                        if (fs::file_exists(as.character(thisf))) {
                             ## link_create doesn't allow files to be symlinked on windows, see https://github.com/r-lib/fs/issues/79
                             ## we can only symlink directories
                             ## so the symlink created in the servr root is a link to the directory containing the video file
