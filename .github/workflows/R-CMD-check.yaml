@@ -41,7 +41,7 @@ jobs:
 
       - name: "Install Linux system libs"
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y libgdal-dev libavdevice-dev libcurl4-openssl-dev libarchive-dev make
+        run: sudo apt-get update && sudo apt-get install -y libgdal-dev libavdevice-dev libcurl4-openssl-dev libarchive-dev make
 
       - name: "Install Mac system libs"
         if: runner.os == 'macOS'
