@@ -568,9 +568,9 @@ ovva_shiny_server <- function(app_data) {
                     ## deleted a row
                     ## if it was on or before the current selected row, then subtract one off the master_playstable_selected_row to keep it in sync
                     if (clicked_row <= master_playstable_selected_row) {
-                        master_playstable_selected_row <<- master_playstable_selected_row-1
+                        master_playstable_selected_row <<- max(master_playstable_selected_row - 1, 1) ## R 1-based indexing
                     }
-                    evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row-1, ";"))
+                    evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row-1, ";")) ## -1 for js 0-based indexing
 
                 }
             }
