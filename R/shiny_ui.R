@@ -25,6 +25,7 @@ ovva_shiny_ui_main <- function(app_data = NULL) {
         ## js to track size of video element
         tags$head(tags$script("var vo_rsztmr;
 $(document).on('shiny:sessioninitialized', function() {
+    $('#playstable_holder').mouseenter(dv_h_suspend); $('#playstable_holder').mouseleave(dv_h_unsuspend);
     Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     $(window).resize(function() {
       clearTimeout(vo_rsztmr);
@@ -34,6 +35,7 @@ $(document).on('shiny:sessioninitialized', function() {
     }
 });
 function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
+tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dvpl.suspend(); $('#dv_h_msg').show();; dv_h_ctr = true; return; } else { return; } }; dv_h_unsuspend = function() { dv_h_ctr = false; dvpl.unsuspend(); $('#dv_h_msg').hide(); }; "),
 tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;}"),
 ),
 shiny::wellPanel(
@@ -99,7 +101,7 @@ fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                 ##uiOutput("preview_button_ui", inline = TRUE),
                 ##uiOutput("open_preview_ui", inline = TRUE),
                 ),
-         column(4, DT::dataTableOutput("playstable"), uiOutput("chart_ui"))),
+         column(4, tags$div(id = "playstable_holder", DT::dataTableOutput("playstable")), tags$div(id = "dv_h_msg", style = "color:red; margin: 8px; display:none;", "Playback suspended while mouse is over the table"), uiOutput("chart_ui"))),
 tags$hr(),
 sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1),
 tags$hr(),
