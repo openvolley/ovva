@@ -749,6 +749,7 @@ ovva_shiny_server <- function(app_data) {
         video_player_type <- reactiveVal("local") ## the current player type, either "local" or "youtube" or "twitch"
         observe({
             if (!is.null(playlist()) && nrow(playlist()) > 0) {
+                js_show("playstable");
                 if (trace_execution) message("reinitializing video player")
                 ## when playlist() changes, push it through to the javascript playlist
                 isolate(waspaused <- isTRUE(input$player_pause_state))
@@ -771,6 +772,7 @@ ovva_shiny_server <- function(app_data) {
                     if (!waspaused) evaljs("dvpl.video_play();") else evaljs("dvpl.video_controller.paused=true;")
                 }
             } else {
+                js_hide("playstable");
                 ## empty playlist, so stop the video, and clean things up
                 evaljs("dvpl.clear_playlist();")
                 ## evaljs("remove_vspinner();") ## doesn't have an effect?
@@ -868,10 +870,12 @@ ovva_shiny_server <- function(app_data) {
                 ## +1 because of 1px border on video element
                 evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height()+1, "px';"))
                 evaljs(paste0("document.getElementById('video_overlay_img').style.height = '", vo_height()+1, "px';"))
+                evaljs(paste0("document.getElementById('dv_h_overlay').style.height = '", vo_height()+1, "px';"))
             } else {
                 vo_height("auto")
                 evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
                 evaljs(paste0("document.getElementById('video_overlay_img').style.height = '400px';"))
+                evaljs(paste0("document.getElementById('dv_h_overlay').style.height = '400px';"))
             }
         })
         ## width of the video player element
@@ -881,9 +885,11 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(my_width) && as.numeric(my_width) > 0) {
                 vo_width(as.numeric(my_width))
                 evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width()+1, "px';"))
+                evaljs(paste0("document.getElementById('dv_h_overlay').style.width = '", vo_width()+1, "px';"))
             } else {
                 vo_width("auto")
                 evaljs(paste0("document.getElementById('video_overlay_img').style.width = '600px';"))
+                evaljs(paste0("document.getElementById('dv_h_overlay').style.width = '600px';"))
             }
         })
         ## height of the video player container, use as negative vertical offset on the overlay element
@@ -891,9 +897,11 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$vo_voffset) && as.numeric(input$vo_voffset) > 0) {
                 evaljs(paste0("document.getElementById('video_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
                 evaljs(paste0("document.getElementById('video_overlay_img').style.marginTop = '-", input$vo_voffset, "px';"))
+                evaljs(paste0("document.getElementById('dv_h_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
             } else {
                 evaljs("document.getElementById('video_overlay').style.marginTop = '0px';")
                 evaljs("document.getElementById('video_overlay_img').style.marginTop = '0px';")
+                evaljs("document.getElementById('dv_h_overlay').style.marginTop = '0px';")
             }
         })
 

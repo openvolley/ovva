@@ -5,7 +5,7 @@ ovva_shiny_ui <- function(app_data) {
         tags$head(
                  tags$style("#subtitle { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: lightblue; font-size: 14px;} #subtitleskill { border: 1px solid black; border-radius: 1px; padding: 5px; margin-left: 6px; background-color: coral; font-size: 14px;}"),
                  tags$style("#headerblock {border-radius:14px; padding:10px; margin-bottom:5px; min-height:120px; color:black; border: 1px solid #000766; background:#000766; background: linear-gradient(90deg, rgba(0,7,102,1) 0%, rgba(255,255,255,1) 65%, rgba(255,255,255,1) 100%);} #headerblock h1, #headerblock h2, #headerblock h3, #headerblock h4 {color:#fff;} h5 {font-weight: bold;} .player_controls button { font-size:large; padding-top:5px; padding-bottom:5px; padding-left:14px; padding-right:14px; border-radius:8px; margin-left:6px;} .player_controls .fa {line-height: inherit;}"),
-                 tags$style("#video_overlay, #video_overlay_img { position:absolute; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
+                 tags$style("#video_overlay, #video_overlay_img, #dv_h_overlay { position:absolute; -webkit-backface-visibility: hidden; -webkit-transform: translateZ(0); }"), ## stop chrome putting the overlay underneath the video
                  if (!is.null(app_data$css)) tags$style(app_data$css),
                  tags$script("$(document).on('shiny:sessioninitialized', function() { $('#video_overlay_img').hide(); });")
              ),
@@ -35,7 +35,7 @@ $(document).on('shiny:sessioninitialized', function() {
     }
 });
 function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
-tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dvpl.suspend(); $('#dv_h_msg').show();; dv_h_ctr = true; return; } else { return; } }; dv_h_unsuspend = function() { dv_h_ctr = false; dvpl.unsuspend(); $('#dv_h_msg').hide(); }; "),
+tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dv_h_ctr = dvpl.suspend(); }}; dv_h_unsuspend = function() { if (dv_h_ctr) { dv_h_ctr = false; dvpl.unsuspend(); }}; "),
 tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;}"),
 ),
 shiny::wellPanel(
@@ -92,6 +92,7 @@ tags$hr(),
 fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                             ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 100%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();", onerror = "dv_player_onerror(event);"),
                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 100%; display:none;"), ## start hidden, note that type = "youtube" also works if we change to twitch ## height: 480px;
+                            tags$div(id = "dv_h_overlay", style = "justify-content:center; align-items:center; color:white; font-size:96px; background-color:#00000080; display:none;", tags$span(icon("pause-circle", style = "vertical-align:middle;"))),
                             tags$img(id = "video_overlay_img"),
                             tags$div(id = "vwm", tags$img(id = "vwm_img"))
                             ),
@@ -152,6 +153,6 @@ tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
 tags$style("video.loading { background: black; }"),
 tags$script("dv_player_onerror = function(e) { $('#dv_player').removeClass('loading'); try { var this_src = btoa(document.getElementById(e.target.id).getAttribute('src')); } catch { var this_src = ''; }; Shiny.setInputValue('video_error', e.target.id + '@' + this_src + '@' + e.target.error.code + '@' + new Date().getTime()); }"),
-tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube' || dvpl.video_controller.type == 'twitch') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }")
+tags$script("dvpl = new dvjs_controller('dv_player','local',true); dvpl.video_afterpause=function() { Shiny.setInputValue('player_pause_state', dvpl.video_controller.paused); }; dvpl.video_onstart=function() { Shiny.setInputValue('playstable_current_item', dvpl.video_controller.current); el = document.getElementById(\"subtitle\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitle; el = document.getElementById(\"subtitleskill\"); if (el !== null) el.textContent=dvpl.video_controller.queue[dvpl.video_controller.current].subtitleskill; if (dvpl.video_controller.type == 'youtube' || dvpl.video_controller.type == 'twitch') { Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); } else { Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); } Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight()); }; dvpl.video_onsuspend=function() { $('#dv_h_msg').show(); $('#dv_h_overlay').css('display', 'flex'); }; dvpl.video_onunsuspend=function() { $('#dv_h_msg').hide(); $('#dv_h_overlay').hide(); }")
 )
 }
