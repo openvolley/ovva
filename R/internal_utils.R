@@ -170,6 +170,23 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
                     if (length(ff) == 1) {
                         out <- ff
                         break
+                    } else if (length(ff) > 1) {
+                        ## can we match on file plus parent (first) directory?
+                        f2 <- function(z) {
+                            z <- fs::path_split(z)[[1]]
+                            if (length(z) < 2) {
+                                NA_character_
+                            } else {
+                                fs::path_join(utils::tail(z, 2))
+                            }
+                        }
+                        vf2 <- f2(video_filename)
+                        ff2 <- vapply(ff, f2, FUN.VALUE = "", USE.NAMES = FALSE)
+                        temp <- which(ff2 == vf2)
+                        if (length(temp) == 1) {
+                            out <- ff[temp]
+                            break
+                        }
                     }
                 }
             }
