@@ -190,13 +190,7 @@ ovva_shiny_server <- function(app_data) {
         ## Game ID
         selected_match_id <- reactive({
             if (trace_execution) message("recalculating game_table")
-            if (is.null(input$game_table_dropdown)) {
-                NULL
-            } else {
-                datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
-                datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
-                datatble$match_id[datatble$display_ID %in% input$game_table_dropdown]
-            }
+            unique(na.omit(input$game_table_dropdown))
         })
 
         ## Team
@@ -415,7 +409,8 @@ ovva_shiny_server <- function(app_data) {
                 ## Customize pbp
                 datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
                 datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
-                dplyr::pull(dplyr::select(datatble, .data$display_ID))
+                ## named list, so that display_ID gets shown but the code can operate directly on match_id as the selected value
+                setNames(as.list(datatble$match_id), datatble$display_ID)
             }
         })
 
@@ -576,24 +571,13 @@ ovva_shiny_server <- function(app_data) {
             }
         })
 
-        selected_matches <- reactive({
-            if (trace_execution) message("recalculating selected matches")
-            if (is.null(input$game_table_dropdown) || is.null(pbp()) || nrow(pbp()) < 1) {
-                NULL
-            } else {
-                datatble <- distinct(pbp(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
-                datatble <- mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team))
-                unique(na.omit(datatble$match_id[datatble$display_ID %in% input$game_table_dropdown]))
-            }
-        })
-
         video_meta <- reactive({
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(selected_matches())) {
+            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id())) {
                 NULL
             } else {
                 if (trace_execution) message("recalculating video_meta")
                 meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
-                meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_matches())
+                meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_match_id())
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
                     ## we are serving the video through the lighttpd/servr server, so need to make symlinks in its document root directory pointing to the actual video files
