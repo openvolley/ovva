@@ -1,7 +1,6 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
-        allow_item_deletion <- FALSE
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
@@ -472,7 +471,7 @@ ovva_shiny_server <- function(app_data) {
         playstable_data <- debounce(reactive({
             blah <- deltrigger() ## react to this
             ptdel <- playstable_to_delete
-            if (allow_item_deletion && !is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
+            if (!is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
                 playstable_data_raw()[!ptdel, ]
             } else {
                 playstable_data_raw()
@@ -495,15 +494,10 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
-                if (allow_item_deletion) {
-                    mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
-                    mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
-                    cnames <- var2fc(names(mydat))
-                    cnames[1] <- ""
-                } else {
-                    mydat <- mydat[, plays_cols_to_show, drop = FALSE]
-                    cnames <- var2fc(names(mydat))
-                }
+                mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
+                mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
+                cnames <- var2fc(names(mydat))
+                cnames[1] <- ""
                 if (trace_execution) message("redrawing playstable, master_selected is: ", master_playstable_selected_row)
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
@@ -556,7 +550,7 @@ ovva_shiny_server <- function(app_data) {
         observeEvent(input$playstable_cell_clicked, { ## note, can't click the same row twice in a row ...
             clicked_row <- input$playstable_cell_clicked$row ## 1-based
             if (!is.null(clicked_row) && !is.na(clicked_row)) {
-                if (!allow_item_deletion || isTRUE(input$playstable_cell_clicked$col > 0)) {
+                if (isTRUE(input$playstable_cell_clicked$col > 0)) {
                     master_playstable_selected_row <<- clicked_row
                     evaljs(paste0("dvpl.video_controller.current=", clicked_row-1, "; dvpl.video_play();"))
                 } else {
@@ -566,7 +560,6 @@ ovva_shiny_server <- function(app_data) {
                         master_playstable_selected_row <<- max(master_playstable_selected_row - 1, 1) ## R 1-based indexing
                     }
                     evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row-1, ";")) ## -1 for js 0-based indexing
-
                 }
             }
         })
@@ -736,7 +729,10 @@ ovva_shiny_server <- function(app_data) {
                 js_show("playstable");
                 if (trace_execution) message("reinitializing video player")
                 ## when playlist() changes, push it through to the javascript playlist
-                isolate(waspaused <- isTRUE(input$player_pause_state))
+                isolate({
+                    was_paused <- isTRUE(input$player_pause_state)
+                    suspended_state <- input$player_suspend_state
+                })
                 if (video_player_type() == "local") {
                     js_hide("dvyt_player")
                     js_show("dv_player")
@@ -752,8 +748,14 @@ ovva_shiny_server <- function(app_data) {
                     ## so if we are mid-playlist already, do some other shenanigans so as not to restart from the first playlist item
                     evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist", seamless = TRUE, controller_var = "dvpl")) ## set the playlist but don't auto-start playing (which would start from item 1)
                     evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row - 1, ";")) ## set the current item
-                    ## if we were paused, don't restart but set the player state to paused since it got reset when the new playlist was loaded
-                    if (!waspaused) evaljs("dvpl.video_play();") else evaljs("dvpl.video_controller.paused=true;")
+                    if (suspended_state < 1) {
+                        ## not suspended
+                        ## if we were paused, don't restart but set the player state to paused since it got reset when the new playlist was loaded
+                        if (!was_paused) evaljs("dvpl.video_play();") else evaljs("dvpl.video_controller.paused=true;")
+                    } else {
+                        ## the player was suspended, so set this one to the same state but otherwise do nothing, the unsuspend handler will take care of it
+                        evaljs(paste0("dvpl.video_controller.suspended=", suspended_state, ";"))
+                    }
                 }
             } else {
                 js_hide("playstable");
