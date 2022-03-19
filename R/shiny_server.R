@@ -843,7 +843,20 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$playback_rate)) ov_video_control("set_playback_rate", input$playback_rate, controller_var = "dvpl")
         })
 
-        output$chart_ui <- renderUI(app_data$chart_renderer)
+        pl_can_be_saved <- reactive({
+            !is.null(playlist()) && (nrow(playlist()) > 0)
+        })
+        output$chart_ui <- renderUI({
+            out <- list(tags$div(style = "height:24px;"),
+                        if (pl_can_be_saved()) downloadButton("download_playlist", label = "Download playlist CSV"),
+                        uiOutput("chart2_ui"))
+            do.call(tagList, Filter(Negate(is.null), out))
+        })
+        output$chart2_ui <- renderUI(app_data$chart_renderer)
+
+        ## download playlist
+        output$download_playlist <- downloadHandler(filename = "playlist.csv",
+                                                    content = function(file) write.csv(playlist(), file, row.names = FALSE, fileEncoding = "UTF-8"))
 
         ## height of the video player element
         vo_height <- reactiveVal("auto")
