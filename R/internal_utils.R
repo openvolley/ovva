@@ -91,6 +91,15 @@ preprocess_data <- function(x, data_type = "indoor") {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
         x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lead(.data$match_id) %eq% .data$match_id & lead(.data$set_number) %eq% .data$set_number & !lead(.data$team) %eq% .data$team)
     }
+    if (!all(c("pt_serve_zone", "ts_pass_zone") %in% names(x))) {
+        x <- x[, setdiff(names(x), c("pt_serve_zone", "ts_pass_zone"))]
+        tempsrv <- dplyr::rename(dplyr::filter(ungroup(x), .data$skill %eq% "Serve"), pt_serve_zone = "start_zone")
+        tempsrv <- dplyr::filter(ungroup(mutate(group_by(tempsrv, .data$match_id, .data$point_id), ok = n() == 1), .data$ok))
+        x <- left_join(x, dplyr::select(tempsrv, "match_id", "point_id", "pt_serve_zone"), by = c("match_id", "point_id"))
+        touchsum <- group_by(dplyr::filter(ungroup(x), !is.na(.data$team)), .data$match_id, .data$team, .data$team_touch_id)
+        touchsum <- ungroup(dplyr::summarize(touchsum, ts_pass_zone = single_value_or_na(.data$end_zone[.data$skill %in% c("Dig", "Reception") | (.data$skill %eq% "Freeball" & !.data$freeball_over)])))
+        x <- left_join(x, dplyr::select(touchsum, -"team"), by = c("match_id", "team_touch_id"))
+    }
     ## separate freeballs into "Freeball dig" and "Freeball attack" (comment these lines out to disable this)
     x <- mutate(x, skill = case_when(.data$skill %eq% "Freeball" & .data$freeball_over ~ "Freeball over",
                                      .data$skill %eq% "Freeball" ~ "Freeball dig",

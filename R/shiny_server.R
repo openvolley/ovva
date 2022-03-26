@@ -24,6 +24,7 @@ ovva_shiny_server <- function(app_data) {
             "Receiving team rotation (setter position)" = "receiving_setter_position", "Serving team rotation (setter position)" = "serving_setter_position",
             "Breakpoint/sideout" = "breakpoint/sideout", "Rotation (setter position)" = "setter_position",
             "Receiving player" = "receiving_player", "Reception grade" = "reception_grade",
+            "Serve zone" = "pt_serve_zone", "Pass/dig zone" = "ts_pass_zone",
             "Setter on court" = "setter_on_court", "Opposition setter on court" = "opposition_setter_on_court", "Opposition team" = "opposition_team")
 
         ## some inits
