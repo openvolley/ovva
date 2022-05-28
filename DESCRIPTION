@@ -22,7 +22,6 @@ Imports:
     future,
     future.apply,
     htmltools,
-    httr,
     methods,
     ovideo (>= 0.17.3),
     peranavolley,
