@@ -772,7 +772,8 @@ ovva_shiny_server <- function(app_data) {
                               tags$button(tags$span(icon("step-forward", style = "vertical-align:middle;")), onclick = "dvpl.video_next(false);", title = "Next"),
                               tags$button(tags$span(icon("pause-circle", style = "vertical-align:middle;")), onclick = "dvpl.video_pause();", title = "Pause"),
                               tags$button(tags$span(icon("backward", style = "vertical-align:middle;"), " 1s"), onclick = "dvpl.jog(-1);", title = "Back 1 second"),
-                              tags$button(tags$span(icon("expand", style = "vertical-align:middle;")), onclick = "dvpl.fullscreen();", title = "Full screen")
+                              tags$button(tags$span(icon("expand", style = "vertical-align:middle;")), onclick = "dvpl.fullscreen();", title = "Full screen"),
+                              tags$button(tags$span(icon("volume-mute", style = "vertical-align:middle;")), onclick = "dvpl.toggle_mute()", title = "Toggle mute")
                               ),
                      tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
                               uiOutput("create_clip_button_ui", inline = TRUE)))
