@@ -131,7 +131,7 @@ is_twitch_video <- function(z) {
 ## internal function to try and locate a video file, when the path embedded in the dvw file is for another computer
 ## dvw_filename should be full path to file
 ## alt_path can be a character vector of one or more alternative paths to search
-find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE, file_extensions = video_file_extensions) {
+find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path = NULL, subtree_only = FALSE, ignore_case = TRUE, file_extensions = video_file_extensions, dir_ls_fun = fs::dir_ls) {
     stopifnot(length(dvw_filename) == 1) ## single dvw file, but can handle multiple video files
     if (is.null(video_filename)) {
         video_filename <- datavolley::dv_read(dvw_filename, metadata_only = TRUE)$meta$video
@@ -151,14 +151,14 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
         out <- NA_character_
         look_for_it <- function(vfilename, top_dir, ignore_case) {
             if (inherits(vfilename, "regex")) {
-                ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = vfilename, ignore.case = ignore_case)
+                ff <- dir_ls_fun(top_dir, recurse = TRUE, regexp = vfilename, ignore.case = ignore_case)
             } else {
                 if (ignore_case) {
                     ## yikes, this could be slow on a big directory
-                    ff <- fs::dir_ls(top_dir, recurse = TRUE, regexp = paste0("\\.(", file_extensions, ")$"), ignore.case = TRUE)
+                    ff <- dir_ls_fun(top_dir, recurse = TRUE, regexp = paste0("\\.(", file_extensions, ")$"), ignore.case = TRUE)
                     ff <- ff[tolower(basename(ff)) == tolower(basename(vfilename))]
                 } else {
-                    possible_paths <- c(top_dir, fs::dir_ls(top_dir, type = "dir", recurse = TRUE))
+                    possible_paths <- c(top_dir, dir_ls_fun(top_dir, type = "dir", recurse = TRUE))
                     ff <- fs::path(possible_paths, basename(vfilename))
                     ff <- ff[fs::file_exists(as.character(ff))]
                 }
