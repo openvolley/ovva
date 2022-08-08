@@ -89,7 +89,10 @@ preprocess_data <- function(x, data_type = "indoor") {
     }
     if (!"freeball_over" %in% names(x)) {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
-        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lead(.data$match_id) %eq% .data$match_id & lead(.data$set_number) %eq% .data$set_number & !lead(.data$team) %eq% .data$team)
+        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball",
+                    lag(.data$match_id) %eq% .data$match_id, ##lead(.data$match_id) %eq% .data$match_id,
+                    lag(.data$point_id) %eq% .data$point_id, ##lead(.data$point_id) %eq% .data$point_id,
+                    ((!is.na(lead(.data$team)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
     }
     if (!all(c("pt_serve_zone", "ts_pass_zone") %in% names(x))) {
         x <- x[, setdiff(names(x), c("pt_serve_zone", "ts_pass_zone"))]
