@@ -419,6 +419,32 @@ ovva_shiny_server <- function(app_data) {
             updatePickerInput(session, "game_table_dropdown", choices = game_table_dropdown(), selected = sel)
         })
 
+        ## which vars are available for custom sort?
+        observe({
+            sortchc <- c()
+            can_sort_on <- function(z) !is.null(z) && (length(z) < 1 || length(z) > 1)
+            if (can_sort_on(selected_match_id())) sortchc <- c(sortchc, Game = "match_id")
+            if (can_sort_on(input$team_list)) sortchc <- c(sortchc, Team = "team")
+            if (can_sort_on(input$player_list)) sortchc <- c(sortchc, Player = "player_name")
+            if (can_sort_on(input$skill_list)) sortchc <- c(sortchc, Skill = "skill")
+            if (can_sort_on(input$skilltype_list)) sortchc <- c(sortchc, `Skill type` = "skilltype")
+            if (can_sort_on(input$phase_list)) sortchc <- c(sortchc, `Phase` = "phase")
+            if (can_sort_on(input$adFilter_list)) {
+                adfvar <- input$adFilter_list
+                adfvarname <- names(intersect(adFilter_list(), adfvar))
+                if (length(adfvarname) != 1) adfvarname <- adfvar
+                sortchc <- c(sortchc, setNames(adfvar, adfvarname))
+            }
+            if (can_sort_on(input$adFilterB_list)) {
+                adfvar <- input$adFilterB_list
+                adfvarname <- names(intersect(adFilter_list(), adfvar))
+                if (length(adfvarname) != 1) adfvarname <- adfvar
+                sortchc <- c(sortchc, setNames(adfvar, adfvarname))
+            }
+            isolate(sel <- intersect(sortchc, input$playlist_sort))
+            updateSelectInput(session, "playlist_sort", choices = sortchc, selected = sel)
+        })
+
         ## Table of all actions as per selected_match_id() and player_id() and evaluation()
         playstable_to_delete <- NULL
         playstable_data_raw <- debounce(reactive({
@@ -463,6 +489,11 @@ ovva_shiny_server <- function(app_data) {
                 pbp_tmp$ROWID <- seq_len(nrow(pbp_tmp)) ## keep track of original row numbers for deletion
                 master_playstable_selected_row <<- 1 ## fresh table/playlist, start from row 1
                 is_fresh_playlist <<- TRUE
+                ## sort according to chosen vars
+                if (length(input$playlist_sort)) {
+                    temp <- intersect(input$playlist_sort, names(pbp_tmp))
+                    pbp_tmp <- dplyr::arrange(pbp_tmp, across(temp))
+                }
                 pbp_tmp
             }
         }), 250)

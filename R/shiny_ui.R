@@ -85,7 +85,8 @@ fluidRow(column(4, tags$h5("1. Select data"),
                                                                                  multiple = TRUE),
                                                                      data.step = 10, data.intro = "2nd Filter value")))
                                   )
-                         )
+                         ),
+                fluidRow(column(8, selectInput(inputId = "playlist_sort", label = "Sort playlist by", choices = NULL, multiple = TRUE)))
                 )),
 ),
 tags$hr(),

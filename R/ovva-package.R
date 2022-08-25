@@ -6,7 +6,7 @@
 #' @docType package
 #' @importFrom assertthat assert_that is.flag is.string
 #' @importFrom datavolley dv_read
-#' @importFrom dplyr .data bind_rows case_when distinct do group_by group_by_at lag lead left_join mutate n tribble ungroup
+#' @importFrom dplyr .data across all_of bind_rows case_when distinct do group_by group_by_at lag lead left_join mutate n tribble ungroup
 #' @importFrom htmltools tagList tags
 #' @importFrom methods as
 #' @importFrom ovideo ov_video_control ov_video_timing_df
