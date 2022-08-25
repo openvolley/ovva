@@ -266,3 +266,6 @@ get_os <- function() {
         stop("unknown operating system: ", os)
     os
 }
+
+## convenience function to silence the fa warnings about icons
+icon <- function(...) shiny::icon(..., verify_fa = FALSE)
