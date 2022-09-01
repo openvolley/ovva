@@ -15,9 +15,8 @@ coverage](https://codecov.io/gh/openvolley/ovva/branch/master/graph/badge.svg)](
 
 ## About
 
-This R package provides a shiny app for viewing volleyball match videos
-in conjunction with scout files. At this stage it is still somewhat
-experimental. Beware!
+This R package provides a Shiny app for viewing volleyball match videos
+in conjunction with scout files.
 
 ## Live demo
 
