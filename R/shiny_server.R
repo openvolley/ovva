@@ -62,9 +62,10 @@ ovva_shiny_server <- function(app_data) {
         meta_unfiltered <- reactiveVal(NULL)
         pbp <- reactiveVal(NULL)
         pbp_augment <- reactiveVal(NULL)
-        got_no_video <- reactiveVal(FALSE)
+        got_no_video <- reactiveVal(FALSE) ## only used to show message about no matches with video
         season_data_type <- reactiveVal("indoor")
-        video_list <- reactiveVal(dplyr::tibble(match_id = character(), filename = character(), video_source = character()))
+        empty_video_list <- dplyr::tibble(match_id = character(), filename = character(), video_source = character())
+        video_list <- reactiveVal(empty_video_list)
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
@@ -102,6 +103,7 @@ ovva_shiny_server <- function(app_data) {
                     if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
                     if (length(out) < 1) {
                         got_no_video(TRUE)
+                        video_list(empty_video_list)
                         pbp(NULL)
                         pbp_augment(NULL)
                         out <- NULL
@@ -179,6 +181,7 @@ ovva_shiny_server <- function(app_data) {
                 isolate({
                     got_no_video(FALSE)
                     meta_unfiltered(NULL)
+                    video_list(empty_video_list)
                     pbp(NULL)
                     pbp_augment(NULL)
                     season_data_type("indoor") ## default
