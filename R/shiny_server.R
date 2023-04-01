@@ -1,7 +1,7 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
-        debug_mp4 <- TRUE
+        debug_mp4 <- FALSE
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
