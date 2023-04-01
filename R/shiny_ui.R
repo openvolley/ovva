@@ -34,7 +34,8 @@ $(document).on('shiny:sessioninitialized', function() {
       Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     }
 });
-function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }"),
+function delete_pl_item(cb) { Shiny.setInputValue('del_plitem', cb.id + '@' + new Date().getTime()); }
+function mp4_pl_item(cb) { Shiny.setInputValue('mp4_plitem', cb.id + '@' + new Date().getTime()); }"),
 tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dv_h_ctr = dvpl.suspend(); }}; dv_h_unsuspend = function() { if (dv_h_ctr) { dv_h_ctr = false; dvpl.unsuspend(); }}; "),
 tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;}"),
 ),

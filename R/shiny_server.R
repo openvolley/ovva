@@ -529,10 +529,23 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
-                mydat$`Delete` <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
-                mydat <- mydat[, c("Delete", plays_cols_to_show), drop = FALSE]
+                mydat$Delete <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
+                show_mp4_col <- isTRUE(app_data$mp4_clip_convert)
+                if (show_mp4_col) {
+                    ## don't show mp4 icon on youtube/twitch sources
+                    ## video type is not in the playlist yet, this happens when the playlist is built, so do a workaround
+                    isolate(vsrc <- if (!is.null(video_meta()) && nrow(video_meta()) > 0) tryCatch(dplyr::pull(left_join(dplyr::select(mydat, "match_id"), distinct(dplyr::select(video_meta(), "match_id", "video_src")), by = "match_id"), .data$video_src), error = function(e) NA_character_))
+                    if (length(vsrc) != nrow(mydat)) vsrc <- rep(NA_character_, nrow(mydat))
+                    vsrc <- case_when(is_youtube_id(vsrc) | grepl("https?://.*youtube", vsrc, ignore.case = TRUE) | grepl("https?://youtu\\.be", vsrc, ignore.case = TRUE) ~ "youtube",
+                                      is_twitch_video(vsrc) ~ "twitch",
+                                      is.na(vsrc) ~ "unknown",
+                                      TRUE ~ "local")
+                    mydat$mp4 <- as.list(ifelse(vsrc %in% c("local"), paste0('<i class="fa fa-file" id="plmp4_', mydat$ROWID, '" onclick="mp4_pl_item(this);" />'), ""))
+                }
+                mydat <- mydat[, c("Delete", if (show_mp4_col) "mp4", plays_cols_to_show), drop = FALSE]
                 cnames <- var2fc(names(mydat))
-                cnames[1] <- ""
+                cnames[1] <- "" ## no name on the delete column
+                if (show_mp4_col) cnames[2] <- "" ## ditto mp4 if present
                 if (trace_execution) message("redrawing playstable, master_selected is: ", master_playstable_selected_row)
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
@@ -678,6 +691,36 @@ ovva_shiny_server <- function(app_data) {
             }
         })
 
+        build_playlist <- function(dat, meta_video) {
+            event_list <- mutate(dat, skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
+                                 skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
+                                                       .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description)),
+                                 subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
+                                 subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
+            event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
+            ## note that the event_list can contain match_ids that do not appear in meta_video, if meta gets updated and the corresponding pbp_augment update is pending
+            if (!all(na.omit(event_list$match_id) %in% meta_video$match_id)) return(NULL) ## return NULL and await retrigger
+            ## TODO: if we filter items out here because of missing video times (but not filter from the playstable), doesn't the playstable selected row get out of whack with the actual item being played?
+            vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE) | grepl("https?://youtu\\.be", meta_video$video_src, ignore.case = TRUE))) {
+                       "youtube"
+                   } else if (all(is_twitch_video(meta_video$video_src))) {
+                       "twitch"
+                   } else {
+                       "local"
+                   }
+            ## TODO also check for mixed sources, which we can't handle yet
+            video_player_type(vpt)
+            if (!is.null(input$highlight_list)) {
+                ##pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
+                pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
+            } else {
+                pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
+            }
+            pl <- pl[!is.na(pl$start_time) & !is.na(pl$duration), ]
+            ## also keep track of actual file paths
+            left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
+        }
+
         playlist <- reactive({
             if (trace_execution) message("recalculating playlist")
             ## Customize pbp
@@ -685,33 +728,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
-                event_list <- mutate(playstable_data(), skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
-                                     skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
-                                                           .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description)),
-                                     subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
-                                     subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
-                event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
-                ## note that the event_list can contain match_ids that do not appear in meta_video, if meta gets updated and the corresponding pbp_augment update is pending
-                if (!all(na.omit(event_list$match_id) %in% meta_video$match_id)) return(NULL) ## return NULL and await retrigger
-                ## TODO: if we filter items out here because of missing video times (but not filter from the playstable), doesn't the playstable selected row get out of whack with the actual item being played?
-                vpt <- if (all(is_youtube_id(meta_video$video_src) | grepl("https?://.*youtube", meta_video$video_src, ignore.case = TRUE) | grepl("https?://youtu\\.be", meta_video$video_src, ignore.case = TRUE))) {
-                           "youtube"
-                       } else if (all(is_twitch_video(meta_video$video_src))) {
-                           "twitch"
-                       } else {
-                           "local"
-                       }
-                ## TODO also check for mixed sources, which we can't handle yet
-                video_player_type(vpt)
-                if (!is.null(input$highlight_list)) {
-                    ##pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
-                } else {
-                    pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
-                }
-                pl <- pl[!is.na(pl$start_time) & !is.na(pl$duration), ]
-                ## also keep track of actual file paths
-                left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
+                build_playlist(playstable_data(), meta_video = meta_video)
             }
         })
 
