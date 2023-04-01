@@ -1,6 +1,7 @@
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
+        debug_mp4 <- TRUE
         plays_cols_to_show <- c("home_team", "visiting_team", "video_time", "code", "set_number", "home_team_score", "visiting_team_score")
         adfilter_cols_to_show <- c(##"time", "video_time", "code", "team", "player_number",
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
@@ -530,16 +531,20 @@ ovva_shiny_server <- function(app_data) {
             scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
                 mydat$Delete <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
-                show_mp4_col <- isTRUE(app_data$mp4_clip_convert)
+                show_mp4_col <- isTRUE(app_data$mp4_clip_convert) || (is.function(playstable_add_mp4_col) && tryCatch(isTRUE(playstable_add_mp4_col()), error = function(e) FALSE))
+                if (debug_mp4) cat("show_mp4_col is: ", capture.output(str(show_mp4_col)), "\n")
                 if (show_mp4_col) {
                     ## don't show mp4 icon on youtube/twitch sources
                     ## video type is not in the playlist yet, this happens when the playlist is built, so do a workaround
                     isolate(vsrc <- if (!is.null(video_meta()) && nrow(video_meta()) > 0) tryCatch(dplyr::pull(left_join(dplyr::select(mydat, "match_id"), distinct(dplyr::select(video_meta(), "match_id", "video_src")), by = "match_id"), .data$video_src), error = function(e) NA_character_))
+                    if (debug_mp4) { cat("vsrc (0):\n"); print(table(vsrc, useNA = "always")) }
                     if (length(vsrc) != nrow(mydat)) vsrc <- rep(NA_character_, nrow(mydat))
+                    if (debug_mp4) { cat("vsrc (1):\n"); print(table(vsrc, useNA = "always")) }
                     vsrc <- case_when(is_youtube_id(vsrc) | grepl("https?://.*youtube", vsrc, ignore.case = TRUE) | grepl("https?://youtu\\.be", vsrc, ignore.case = TRUE) ~ "youtube",
                                       is_twitch_video(vsrc) ~ "twitch",
                                       is.na(vsrc) ~ "unknown",
                                       TRUE ~ "local")
+                    if (debug_mp4) { cat("vsrc (2):\n"); print(table(vsrc, useNA = "always")) }
                     mydat$mp4 <- as.list(ifelse(vsrc %in% c("local"), paste0('<i class="fa fa-file" id="plmp4_', mydat$ROWID, '" onclick="mp4_pl_item(this);" />'), ""))
                 }
                 mydat <- mydat[, c("Delete", if (show_mp4_col) "mp4", plays_cols_to_show), drop = FALSE]
