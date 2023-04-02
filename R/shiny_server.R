@@ -451,10 +451,14 @@ ovva_shiny_server <- function(app_data) {
 
         ## Table of all actions as per selected_match_id() and player_id() and evaluation()
         playstable_to_delete <- NULL
+        playstable_ticked <- NULL
+        playstable_display_order <- NULL
         playstable_data_raw <- debounce(reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_match_id()) || is.null(meta())) {
                 playstable_to_delete <<- NULL
+                playstable_ticked <<- NULL
+                playstable_display_order <<- NULL
                 NULL
             } else {
                 if (trace_execution) message("recalculating playstable_data")
@@ -490,7 +494,9 @@ ovva_shiny_server <- function(app_data) {
                 if (!is.null(filter_var) && nzchar(filter_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filter_var]] %in% input$adFilterValue_list)
                 if (!is.null(filterB_var) && nzchar(filterB_var)) pbp_tmp <- dplyr::filter(pbp_tmp, .data[[filterB_var]] %in% input$adFilterBValue_list)
                 playstable_to_delete <<- rep(FALSE, nrow(pbp_tmp))
-                pbp_tmp$ROWID <- seq_len(nrow(pbp_tmp)) ## keep track of original row numbers for deletion
+                playstable_ticked <<- rep(FALSE, nrow(pbp_tmp))
+                playstable_display_order <<- seq_nrows(pbp_tmp)
+                pbp_tmp$ROWID <- seq_nrows(pbp_tmp) ## keep track of original row numbers for deletion
                 master_playstable_selected_row <<- 1 ## fresh table/playlist, start from row 1
                 is_fresh_playlist <<- TRUE
                 ## sort according to chosen vars
@@ -507,22 +513,64 @@ ovva_shiny_server <- function(app_data) {
         playstable_data <- debounce(reactive({
             blah <- deltrigger() ## react to this
             ptdel <- playstable_to_delete
+            ord <- if (!is.null(playstable_display_order)) playstable_display_order else seq_nrows(playstable_data_raw())
+            out <- playstable_data_raw()[ord, ]
             if (!is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
-                playstable_data_raw()[!ptdel, ]
+                out[!ptdel[ord], ]
             } else {
-                playstable_data_raw()
+                out
             }
         }), 500)
 
-        observeEvent(input$del_plitem, {
-            ## when the user clicks a delete icon, mark that row for removal
-            if (!is.null(input$del_plitem) && nzchar(input$del_plitem) && grepl("@", input$del_plitem) && !is.null(playstable_to_delete)) {
+        observeEvent(input$randomize_playlist, {
+            if (length(playstable_display_order) > 0) {
+                playstable_display_order <<- sample.int(length(playstable_display_order), size = length(playstable_display_order), replace = FALSE)
+                is_fresh_playlist <<- FALSE
+                deltrigger(deltrigger() + 1L)
+            }
+        })
+        observeEvent(input$delete_ticked, {
+            if (any(playstable_ticked)) {
                 plchk <- playstable_to_delete
-                temp <- strsplit(substr(input$del_plitem, 4, nchar(input$del_plitem)), "@")[[1]]
-                plchk[as.numeric(temp[1])] <- TRUE
+                plchk[which(playstable_ticked)] <- TRUE
                 playstable_to_delete <<- plchk
                 is_fresh_playlist <<- FALSE
                 deltrigger(deltrigger() + 1L)
+            }
+        })
+
+        observeEvent(input$keep_ticked, {
+            if (any(playstable_ticked)) {
+                plchk <- playstable_to_delete
+                ## anything already deleted remains deleted
+                ## anything not ticked gets added to the delete list
+                plchk[which(playstable_to_delete | !playstable_ticked)] <- TRUE
+                playstable_to_delete <<- plchk
+                is_fresh_playlist <<- FALSE
+                deltrigger(deltrigger() + 1L)
+            }
+        })
+
+        observeEvent(input$reset_ticked, {
+            playstable_ticked <<- rep(FALSE, length(playstable_ticked))
+            playstable_to_delete <<- rep(FALSE, length(playstable_to_delete))
+            playstable_display_order <<- seq_along(playstable_to_delete)
+            is_fresh_playlist <<- FALSE
+            deltrigger(deltrigger() + 1L)
+        })
+
+        observeEvent(input$toggle_plitem, {
+            ## toggle selection of the playlist item
+            if (!is.null(input$toggle_plitem) && nzchar(input$toggle_plitem) && grepl("@", input$toggle_plitem) && !is.null(playstable_ticked)) {
+                plchk <- playstable_ticked
+                thisid <- strsplit(input$toggle_plitem, "@")[[1]][1]
+                totoggle <- as.numeric(sub("^pl_", "", thisid))
+                ##cat("toggling:\n "); print(totoggle)
+                plchk[totoggle] <- !plchk[totoggle]
+                playstable_ticked <<- plchk
+                ##cat("ticked:\n  "); print(which(playstable_ticked))
+                ## update appearance of icon
+                evaljs(paste0("$('#", thisid, "').toggleClass('fa-square'); $('#", thisid, "').toggleClass('fa-square-check');"))
             }
         })
 
@@ -530,7 +578,9 @@ ovva_shiny_server <- function(app_data) {
             mydat <- playstable_data()
             scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
-                mydat$Delete <- as.list(paste0('<i class="fa fa-trash-alt" id="pl_', mydat$ROWID, '" onclick="delete_pl_item(this);" />'))
+                ## we are potentially showing a subset of rows of playstable_data_raw() according to playstable_to_delete
+                tbc <- ifelse(playstable_ticked[mydat$ROWID], "fa-square-check", "fa-square") ## or subset by playstable_to_delete
+                mydat$tickboxes <- as.list(paste0('<i class="fa-regular ', tbc, '" id="pl_', mydat$ROWID, '" onclick="toggle_pl_item(this);" />'))
                 show_mp4_col <- isTRUE(app_data$mp4_clip_convert) || (is.function(playstable_add_mp4_col) && tryCatch(isTRUE(playstable_add_mp4_col()), error = function(e) FALSE))
                 if (debug_mp4) cat("show_mp4_col is: ", capture.output(str(show_mp4_col)), "\n")
                 if (show_mp4_col) {
@@ -547,10 +597,11 @@ ovva_shiny_server <- function(app_data) {
                     if (debug_mp4) { cat("vsrc (2):\n"); print(table(vsrc, useNA = "always")) }
                     mydat$mp4 <- as.list(ifelse(vsrc %in% c("local"), paste0('<i class="fa fa-file" id="plmp4_', mydat$ROWID, '" onclick="mp4_pl_item(this);" />'), ""))
                 }
-                mydat <- mydat[, c("Delete", if (show_mp4_col) "mp4", plays_cols_to_show), drop = FALSE]
+                mydat <- mydat[, c("tickboxes", if (show_mp4_col) "mp4", plays_cols_to_show), drop = FALSE]
                 cnames <- var2fc(names(mydat))
                 cnames[1] <- "" ## no name on the delete column
                 if (show_mp4_col) cnames[2] <- "" ## ditto mp4 if present
+                js_show("dk_buts")
                 if (trace_execution) message("redrawing playstable, master_selected is: ", master_playstable_selected_row)
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
@@ -558,6 +609,7 @@ ovva_shiny_server <- function(app_data) {
                               options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = scrolly, scroller = TRUE, ordering = FALSE,
                                              initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
             } else {
+                js_hide("dk_buts")
                 NULL
             }
         })
@@ -668,7 +720,7 @@ ovva_shiny_server <- function(app_data) {
                         ## block user interaction while this happens
                         showModal(modalDialog(title = "Please wait", size = "l", footer = NULL))
                         shiny::withProgress(message = "Processing video files", {
-                            meta_video$video_src <- vapply(seq_len(nrow(meta_video)), function(z) {
+                            meta_video$video_src <- vapply(seq_nrows(meta_video), function(z) {
                                 shiny::setProgress(value = z/nrow(meta_video))
                                 tryCatch(app_data$video_serve_method(video_filename = meta_video$file[z], dvw_filename = meta_video$dvw_filename[z]), error = function(e) NA_character_)
                             }, FUN.VALUE = "", USE.NAMES = FALSE)
@@ -754,7 +806,7 @@ ovva_shiny_server <- function(app_data) {
                              input$timing_dig_transition_start_offset, input$timing_dig_transition_duration,
                              input$timing_freeball_reception_start_offset, input$timing_freeball_reception_duration,
                              input$timing_freeball_transition_start_offset, input$timing_freeball_transition_duration)
-                for (ri in seq_len(nrow(def))) {
+                for (ri in seq_nrows(def)) {
                     skill <- def$skill[ri]
                     phase <- def$phase[ri]
                     def$start_offset[ri] <- input[[paste0("timing_", tolower(skill), "_", tolower(phase), "_start_offset")]]
@@ -768,7 +820,7 @@ ovva_shiny_server <- function(app_data) {
                 def <- data.frame(skill = c("serve", "reception", "set", "set", "attack", "attack", "block", "block", "dig", "freeball", "freeball"),
                                   phase = c("serve", "reception", "reception", "transition", "reception", "transition", "reception", "transition", "transition", "reception", "transition"),
                                   stringsAsFactors = FALSE)
-                for (ri in seq_len(nrow(def))) {
+                for (ri in seq_nrows(def)) {
                     thisid <- paste0("timing_", def$skill[ri], "_", def$phase[ri], "_", whch)
                     updateNumericInput(session, inputId = thisid, value = input[[thisid]] + by)
                 }
@@ -805,7 +857,7 @@ ovva_shiny_server <- function(app_data) {
                     ## so if we are mid-playlist already, do some other shenanigans so as not to restart from the first playlist item
                     evaljs(ovideo::ov_playlist_as_onclick(playlist(), video_id = if (video_player_type() == "local") "dv_player" else "dvyt_player", dvjs_fun = "dvjs_set_playlist", seamless = TRUE, controller_var = "dvpl")) ## set the playlist but don't auto-start playing (which would start from item 1)
                     evaljs(paste0("dvpl.video_controller.current=", master_playstable_selected_row - 1, ";")) ## set the current item
-                    if (suspended_state < 1) {
+                    if (!isTRUE(input$player_suspend_state > 0)) { ##suspended_state < 1) {
                         ## not suspended
                         ## if we were paused, don't restart but set the player state to paused since it got reset when the new playlist was loaded
                         if (!was_paused) evaljs("dvpl.video_play();") else evaljs("dvpl.video_controller.paused=true;")
@@ -857,7 +909,7 @@ ovva_shiny_server <- function(app_data) {
             tryCatch({
                 chk <- sys::exec_internal("ffmpeg", "-version")
                 future::plan("multisession")
-                pll <- lapply(seq_len(nrow(playlist())), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
+                pll <- lapply(seq_nrows(playlist()), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
                 tempfiles <- future.apply::future_lapply(pll, function(plitem) {
                     ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
                     outfile <- tempfile(fileext = paste0(".", fs::path_ext(plitem$file)))

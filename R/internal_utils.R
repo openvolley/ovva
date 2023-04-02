@@ -6,6 +6,10 @@ paste_url <- function(...) {
 
 `%eq%` <- function (x, y) x == y & !is.na(x) & !is.na(y)
 
+seq_nrows <- function(x) {
+    if (length(dim(x)) < 1 || nrow(x) < 1) integer() else seq_len(nrow(x))
+}
+
 single_value_or_na <- function(x) if (length(x) == 1) x else NA
 
 single_value_or_na_char <- function(x) if (length(x) == 1) x else NA_character_
