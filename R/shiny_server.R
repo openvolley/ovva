@@ -569,8 +569,6 @@ ovva_shiny_server <- function(app_data) {
                 plchk[totoggle] <- !plchk[totoggle]
                 playstable_ticked <<- plchk
                 ##cat("ticked:\n  "); print(which(playstable_ticked))
-                ## update appearance of icon
-                evaljs(paste0("$('#", thisid, "').toggleClass('fa-square'); $('#", thisid, "').toggleClass('fa-square-check');"))
             }
         })
 
@@ -579,8 +577,8 @@ ovva_shiny_server <- function(app_data) {
             scrolly <- if (is.numeric(vo_height())) max(200, vo_height() - 80) else 200 ## 80px for table header row
             if (!is.null(mydat)) {
                 ## we are potentially showing a subset of rows of playstable_data_raw() according to playstable_to_delete
-                tbc <- ifelse(playstable_ticked[mydat$ROWID], "fa-square-check", "fa-square") ## or subset by playstable_to_delete
-                mydat$tickboxes <- as.list(paste0('<i class="fa-regular ', tbc, '" id="pl_', mydat$ROWID, '" onclick="toggle_pl_item(this);" />'))
+                tbc <- ifelse(playstable_ticked[mydat$ROWID], "checked", "") ## or subset by playstable_to_delete
+                mydat$tickboxes <- as.list(paste0('<input type="checkbox" id="pl_', mydat$ROWID, '" onclick="toggle_pl_item(this);" ', tbc, '/>'))
                 show_mp4_col <- isTRUE(app_data$mp4_clip_convert) || (is.function(playstable_add_mp4_col) && tryCatch(isTRUE(playstable_add_mp4_col()), error = function(e) FALSE))
                 if (debug_mp4) cat("show_mp4_col is: ", capture.output(str(show_mp4_col)), "\n")
                 if (show_mp4_col) {
