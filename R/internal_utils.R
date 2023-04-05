@@ -163,7 +163,7 @@ find_video_in_subtree <- function(dvw_filename, video_filename = NULL, alt_path 
         this_dir <- dirname(dvw_filename) ## actual file has to be under the same path
         out <- NA_character_
         look_for_it <- function(vfilename, top_dir, ignore_case) {
-            if (inherits(vfilename, "regex")) {
+            if (inherits(vfilename, c("regex", "stringr_regex", "stringr_pattern"))) {
                 ff <- dir_ls_fun(top_dir, recurse = TRUE, regexp = vfilename, ignore.case = ignore_case)
             } else {
                 if (ignore_case) {
