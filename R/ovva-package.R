@@ -14,5 +14,5 @@
 #' @importFrom shiny actionButton column debounce downloadButton downloadHandler fluidPage fluidRow isolate mainPanel modalDialog numericInput observe observeEvent onSessionEnded onStop plotOutput reactive reactiveVal reactiveValues removeModal renderUI renderPlot selectInput selectizeInput showModal sidebarLayout sidebarPanel sliderInput tabPanel tabsetPanel updateActionButton updateNumericInput updateSelectInput uiOutput
 #' @importFrom shinyWidgets pickerInput updatePickerInput
 #' @importFrom stats na.omit setNames
-#' @importFrom utils write.csv
+#' @importFrom utils capture.output str write.csv
 NULL

@@ -1,3 +1,5 @@
+globalVariables("playstable_add_mp4_col") ## suppress check warning about this
+
 ovva_shiny_server <- function(app_data) {
     function(input, output, session) {
         trace_execution <- FALSE ## for debugging
@@ -587,7 +589,7 @@ ovva_shiny_server <- function(app_data) {
                 ## we are potentially showing a subset of rows of playstable_data_raw() according to playstable_to_delete
                 tbc <- ifelse(playstable_ticked[mydat$ROWID], "checked", "") ## or subset by playstable_to_delete
                 mydat$tickboxes <- as.list(paste0('<input type="checkbox" id="pl_', mydat$ROWID, '" onclick="toggle_pl_item(this);" ', tbc, '/>'))
-                show_mp4_col <- isTRUE(app_data$mp4_clip_convert) || (is.function(playstable_add_mp4_col) && tryCatch(isTRUE(playstable_add_mp4_col()), error = function(e) FALSE))
+                show_mp4_col <- isTRUE(app_data$mp4_clip_convert) || tryCatch(isTRUE(exists("playstable_add_mp4_col") && is.function(playstable_add_mp4_col) && isTRUE(playstable_add_mp4_col())), error = function(e) FALSE)
                 if (debug_mp4) cat("show_mp4_col is: ", capture.output(str(show_mp4_col)), "\n")
                 if (show_mp4_col) {
                     ## don't show mp4 icon on youtube/twitch sources
