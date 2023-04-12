@@ -170,7 +170,7 @@ ovva_shiny_server <- function(app_data) {
                             mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
                             ## replace missing game dates with those from meta, if we can
                             mydat <- left_join(mydat, game_dates_meta %>% dplyr::rename(game_date2 = "game_date"), by = "match_id") %>%
-                                mutate(game_date = if_else(is.na(.data$game_date), .data$game_date2, .data$game_date)) %>%
+                                mutate(game_date = if_else(is.na(.data$game_date) | is.infinite(.data$game_date), .data$game_date2, .data$game_date)) %>%
                                 dplyr::select(-"game_date2")
 ##                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
 ##                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
