@@ -99,6 +99,10 @@ ovva_shiny_server <- function(app_data) {
                         output$processing_note <- renderUI(NULL)
                     }
                     meta_unfiltered(out)
+                    ## if the plays component doesn't have clock times, then we need to get the date from the metadata
+                    game_dates_meta <- bind_rows(lapply(out, function(z) list(match_id = z$match_id, game_date = z$match$date))) %>%
+                        dplyr::filter(!is.na(.data$game_date))
+                    game_dates_meta <- game_dates_meta[!game_dates_meta$match_id %in% game_dates_meta$match_id[duplicated(game_dates_meta$match_id)], ]
                     ## out is a list of metadata objects
                     ## prune out any that don't have video
                     if (!is.null(out)) out <- Filter(function(z) !is.null(z$video) && nrow(z$video) > 0, out)
@@ -162,6 +166,10 @@ ovva_shiny_server <- function(app_data) {
                             }
                             mydat <- mydat[mydat$match_id %in% my_match_ids, ]
                             mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
+                            ## replace missing game dates with those from meta, if we can
+                            mydat <- left_join(mydat, game_dates_meta %>% dplyr::rename(game_date2 = "game_date"), by = "match_id") %>%
+                                mutate(game_date = if_else(is.na(.data$game_date), .data$game_date2, .data$game_date)) %>%
+                                dplyr::select(-"game_date2")
 ##                        mydat <- mutate(mydat, game_id = paste0(gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1', .data$home_team, perl = TRUE),
 ##                                                                "_", gsub('\\b(\\pL)\\pL{1,}|.','\\U\\1',.data$visiting_team, perl = TRUE)))
 ##                        mydat <- mutate(mydat, game_id = case_when(!is.na(.data$game_date) & !is.infinite(.data$game_date) ~ paste0(.data$game_date, "_", .data$game_id),
