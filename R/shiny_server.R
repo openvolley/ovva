@@ -757,10 +757,17 @@ ovva_shiny_server <- function(app_data) {
         })
 
         build_playlist <- function(dat, meta_video) {
+            if ("home_score_start_of_point" %in% names(dat)) {
+                hsc <- "home_score_start_of_point"
+                vsc <- "visiting_score_start_of_point"
+            } else {
+                hsc <- "home_team_score"
+                vsc <- "visiting_team_score"
+            }
             event_list <- mutate(dat, skill = case_when(.data$skill %in% c("Freeball dig", "Freeball over") ~ "Freeball", TRUE ~ .data$skill), ## ov_video needs just "Freeball"
                                  skilltype = case_when(.data$skill %in% c("Serve", "Reception", "Dig", "Freeball", "Block", "Set") ~ .data$skill_type,
                                                        .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description)),
-                                 subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data$home_team_score, "-", .data$visiting_team_score, .data$visiting_team)),
+                                 subtitle = js_str_nospecials(paste("Set", .data$set_number, "-", .data$home_team, .data[[hsc]], "-", .data[[vsc]], .data$visiting_team)),
                                  subtitleskill = js_str_nospecials(paste(.data$player_name, "-", .data$skilltype, ":", .data$evaluation_code)))
             event_list <- dplyr::filter(event_list, !is.na(.data$video_time)) ## can't have missing video time entries
             ## note that the event_list can contain match_ids that do not appear in meta_video, if meta gets updated and the corresponding pbp_augment update is pending
