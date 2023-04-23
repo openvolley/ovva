@@ -682,7 +682,7 @@ ovva_shiny_server <- function(app_data) {
                 NULL
             } else {
                 if (trace_execution) message("recalculating video_meta")
-                meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, match_id = z$match_id, dvw_filename = z$filename)))
+                meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, camera = as.character(.data$camera), file = as.character(.data$file), match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_match_id())
                 if (nrow(meta_video) < 1) return(NULL)
                 if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
