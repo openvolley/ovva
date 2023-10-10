@@ -73,7 +73,7 @@ ovva_shiny_server <- function(app_data) {
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
                 isolate({
-                    if (trace_execution) message("recalculating meta")
+                    if (trace_execution) cat("recalculating meta\n")
                     showModal(modalDialog(title = "Processing match metadata ...", footer = NULL, "Please wait"))
                     if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
                         ## use allmeta.rds if available
@@ -203,7 +203,7 @@ ovva_shiny_server <- function(app_data) {
 
         ## Game ID
         selected_match_id <- reactive({
-            if (trace_execution) message("recalculating game_table")
+            if (trace_execution) cat("updating selected_match_id\n")
             unique(na.omit(input$game_table_dropdown))
         })
 
@@ -471,7 +471,7 @@ ovva_shiny_server <- function(app_data) {
                 playstable_display_order <<- NULL
                 NULL
             } else {
-                if (trace_execution) message("recalculating playstable_data")
+                if (trace_execution) cat("recalculating playstable_data\n")
                 pbp <- pbp_augment()
                 meta <- meta()
                 game_select <- selected_match_id()
@@ -610,7 +610,7 @@ ovva_shiny_server <- function(app_data) {
                 cnames[1] <- "" ## no name on the delete column
                 if (show_mp4_col) cnames[2] <- "" ## ditto mp4 if present
                 js_show("dk_buts")
-                if (trace_execution) message("redrawing playstable, master_selected is: ", master_playstable_selected_row)
+                if (trace_execution) cat("redrawing playstable, master_selected is: ", master_playstable_selected_row, "\n")
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = max(master_playstable_selected_row, 1L), target = "row"),
@@ -681,7 +681,7 @@ ovva_shiny_server <- function(app_data) {
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id())) {
                 NULL
             } else {
-                if (trace_execution) message("recalculating video_meta")
+                if (trace_execution) cat("recalculating video_meta\n")
                 meta_video <- bind_rows(lapply(meta(), function(z) if (!is.null(z$video)) mutate(z$video, camera = as.character(.data$camera), file = as.character(.data$file), match_id = z$match_id, dvw_filename = z$filename)))
                 meta_video <- dplyr::filter(meta_video, .data$match_id %in% selected_match_id())
                 if (nrow(meta_video) < 1) return(NULL)
@@ -851,7 +851,7 @@ ovva_shiny_server <- function(app_data) {
         observe({
             if (!is.null(playlist()) && nrow(playlist()) > 0) {
                 js_show("playstable");
-                if (trace_execution) message("reinitializing video player")
+                if (trace_execution) cat("reinitializing video player\n")
                 ## when playlist() changes, push it through to the javascript playlist
                 isolate({
                     was_paused <- isTRUE(input$player_pause_state)
