@@ -248,19 +248,21 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Team
-        team_list = reactive({
-            if (trace_execution) message("recalculating team_list")
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
+        team_list = reactiveVal(NULL)
+        observe({
+            blah <- selected_match_id()
+            pbp <- isolate(pbp_augment())
+            if (trace_execution) cat("recalculating team_list\n")
+            tl <- if (is.null(pbp) || nrow(pbp) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id())
+                tmp <- dplyr::filter(pbp, .data$match_id %in% selected_match_id())
                 sort(unique(na.omit(tmp$team)))
             }
-        })
-        observe({
-            isolate(sel <- intersect(team_list(), input$team_list))
-            if (length(sel) < 1) sel <- team_list() ## select all
-            updatePickerInput(session, "team_list", choices = team_list(), selected = sel)
+            team_list(tl)
+            isolate(sel <- intersect(tl, input$team_list))
+            if (length(sel) < 1) sel <- tl ## select all
+            updatePickerInput(session, "team_list", choices = tl, selected = sel)
         })
 
         ## Player ID
