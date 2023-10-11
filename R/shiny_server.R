@@ -555,17 +555,28 @@ ovva_shiny_server <- function(app_data) {
 
         ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
         deltrigger <- reactiveVal(0)
-        playstable_data <- debounce(reactive({
+        playstable_data_bouncy <- reactiveVal(NULL)
+        playstable_data <- debounce(playstable_data_bouncy, 500)
+        ##playstable_data <- debounce(reactive({
+        last_pt_hash <- ""
+        observe({
+            if (trace_execution) cat("checking playstable_data\n")
             blah <- deltrigger() ## react to this
             ptdel <- playstable_to_delete
             ord <- if (!is.null(playstable_display_order)) playstable_display_order else seq_nrows(playstable_data_raw())
             out <- playstable_data_raw()[ord, ]
             if (!is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
-                out[!ptdel[ord], ]
-            } else {
-                out
+                out <- out[!ptdel[ord], ]
             }
-        }), 500)
+            pt_hash <- digest::digest(out)
+            if (last_pt_hash != pt_hash) {
+                if (trace_execution) cat("  updating playstable_data\n")
+                last_pt_hash <<- pt_hash
+                playstable_data_bouncy(out)
+            } else {
+                if (trace_execution) cat("  playstable_data has not changed\n")
+            }
+        })##, 500)
 
         observeEvent(input$randomize_playlist, {
             if (length(playstable_display_order) > 0) {
@@ -828,14 +839,24 @@ ovva_shiny_server <- function(app_data) {
             left_join(pl, meta_video[, c("file", "video_src")], by = "video_src")
         }
 
-        playlist <- reactive({
-            if (trace_execution) message("recalculating playlist")
+        playlist <- reactiveVal(NULL)
+        last_playlist_hash <- ""
+        observe({
+            if (trace_execution) cat("recalculating playlist\n")
             ## Customize pbp
             meta_video <- video_meta()
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
                 NULL
             } else {
-                build_playlist(playstable_data(), meta_video = meta_video)
+                pl <- build_playlist(playstable_data(), meta_video = meta_video)
+                pl_hash <- digest::digest(pl)
+                if (last_playlist_hash != pl_hash) {
+                    if (trace_execution) cat("  updating playlist\n")
+                    last_playlist_hash <<- pl_hash
+                    playlist(pl)
+                } else {
+                    if (trace_execution) cat("  playlist has not changed\n")
+                }
             }
         })
 
