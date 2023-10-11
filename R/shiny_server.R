@@ -208,45 +208,49 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Games
-        game_table_dropdown <- reactive({
+        last_game_table_hash <- ""
+        game_table_dropdown <- reactiveVal(NULL)
+        observe({
+            if (trace_execution) cat("updating game_table_dropdown()\n")
             out <- if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
-                isolate({
-                    ## don't be reactive to these, just use them to tailor the message
-                    output$no_game_data <- renderUI(
-                        if (is.null(input$season)) {
-                            tags$div(class = "alert alert-info", "No competition data sets. Log in?")
-                        } else if (!is.null(meta()) && is.null(pbp())) {
-                            tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                        } else if (is.null(meta()) && have_done_startup()) {
-                            if (isTRUE(isolate(got_no_video()))) {
-                                tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                            } else {
-                                tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
-                            }
-                        } else {
-                            NULL
-                        })
-                })
-                ## hide the game selector if we have no games with video (or haven't selected a data set)
-                js_hide("game_table_dropdown")
-                character()
-            } else {
-                output$no_game_data <- renderUI(NULL)
-                js_show("game_table_dropdown")
-                ## Customize pbp
-                datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
-                datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
-                ## named list, so that display_ID gets shown but the code can operate directly on match_id as the selected value
-                setNames(as.list(datatble$match_id), datatble$display_ID)
+                       isolate({
+                           ## don't be reactive to these, just use them to tailor the message
+                           output$no_game_data <- renderUI(
+                               if (is.null(input$season)) {
+                                   tags$div(class = "alert alert-info", "No competition data sets. Log in?")
+                               } else if (!is.null(meta()) && is.null(pbp())) {
+                                   tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                               } else if (is.null(meta()) && have_done_startup()) {
+                                   if (isTRUE(isolate(got_no_video()))) {
+                                       tags$div(class = "alert alert-danger", "No matches with video could be found.")
+                                   } else {
+                                       tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
+                                   }
+                               } else {
+                                   NULL
+                               })
+                       })
+                       ## hide the game selector if we have no games with video (or haven't selected a data set)
+                       js_hide("game_table_dropdown")
+                       character()
+                   } else {
+                       output$no_game_data <- renderUI(NULL)
+                       js_show("game_table_dropdown")
+                       ## Customize pbp
+                       datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
+                       datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
+                       ## named list, so that display_ID gets shown but the code can operate directly on match_id as the selected value
+                       setNames(as.list(datatble$match_id), datatble$display_ID)
+                   }
+            gt_hash <- digest::digest(out)
+            if (last_game_table_hash != gt_hash) {
+                last_game_table_hash <<- gt_hash
+                game_table_dropdown(out)
+                if (trace_execution) cat("updating input$game_table_dropdown\n")
+                sel <- intersect(out, input$game_table_dropdown)
+                updatePickerInput(session, "game_table_dropdown", choices = out, selected = sel)
             }
-            update_game_table_dropdown(out)
-            out
         })
-
-        update_game_table_dropdown <- function(chc) {
-            sel <- intersect(chc, input$game_table_dropdown)
-            updatePickerInput(session, "game_table_dropdown", choices = chc, selected = sel)
-        }
 
         selected_match_id <- reactive({
             if (trace_execution) cat("updating selected_match_id\n")
