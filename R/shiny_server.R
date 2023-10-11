@@ -73,6 +73,7 @@ ovva_shiny_server <- function(app_data) {
         meta <- reactive({
             if (!is.null(input$season) && input$season %in% season_choices()) {
                 isolate({
+                    sdigest <- digest::digest(input$season)
                     if (trace_execution) cat("recalculating meta\n")
                     showModal(modalDialog(title = "Processing match metadata ...", footer = NULL, "Please wait"))
                     if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
@@ -90,6 +91,8 @@ ovva_shiny_server <- function(app_data) {
                                                                do.call(dv_read, dvargs)$meta
                                                            })
                     }
+                    ## augment the match_id values with input$season, in case there are the same matches in different data sets (seasons)
+                    out <- lapply(out, function(z) { z$match_id <- paste0(sdigest, "|", z$match_id); z })
                     if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
                         try(out <- lapply(out, app_data$meta_preprocess))
                     }
@@ -166,6 +169,9 @@ ovva_shiny_server <- function(app_data) {
                                                                                    do.call(dv_read, dvargs)$plays
                                                                                }))
                             }
+                            ## augment the match_id values with input$season, in case there are the same matches in different data sets (seasons)
+                            mydat$match_id <- paste0(sdigest, "|", mydat$match_id)
+
                             mydat <- mydat[mydat$match_id %in% my_match_ids, ]
                             mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
                             ## replace missing game dates with those from meta, if we can
