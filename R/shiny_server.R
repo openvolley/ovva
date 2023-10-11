@@ -260,9 +260,9 @@ ovva_shiny_server <- function(app_data) {
         ## Team
         team_list = reactiveVal(NULL)
         observe({
-            blah <- selected_match_id()
-            pbp <- isolate(pbp_augment())
             if (trace_execution) cat("recalculating team_list\n")
+            blah <- selected_match_id() ## reactive to this
+            pbp <- pbp_augment() ## no reason to isolate()?
             tl <- if (is.null(pbp) || nrow(pbp) < 1) {
                 character()
             } else {
@@ -276,36 +276,54 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Player ID
-        player_list = reactive({
-            if (trace_execution) message("recalculating player_list")
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
+        player_list <- reactiveVal(NULL)
+        last_player_list_hash <- ""
+        observe({
+            if (trace_execution) cat("recalculating player_list\n")
+            blah <- list(selected_match_id(), input$team_list) ## reactive to these and pbp_augment
+            pl <- if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$player_name)))
             }
-        })
-        observe({
-            isolate(sel <- intersect(player_list(), input$player_list))
-            if (length(sel) < 1) sel <- player_list() ## select all
-            updatePickerInput(session, "player_list", choices = player_list(), selected = sel)
-        })
+            pl_hash <- digest::digest(pl)
+            if (last_player_list_hash != pl_hash) {
+                if (trace_execution) cat("  updating player selector\n")
+                last_player_list_hash <<- pl_hash
+                player_list(pl)
+                isolate(sel <- intersect(pl, input$player_list))
+                if (length(sel) < 1) sel <- pl ## select all
+                updatePickerInput(session, "player_list", choices = pl, selected = sel)
+            } else {
+                if (trace_execution) cat("  player list unchanged\n")
+            }
+        })##, priority = -100)
 
         ## Skill
-        skill_list = reactive({
-            if (trace_execution) message("recalculating skill_list")
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
+        skill_list = reactiveVal(NULL)
+        last_skill_list_hash <- ""
+        observe({
+            if (trace_execution) cat("recalculating skill_list\n")
+            sl <- if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
                 tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
                 sort(unique(na.omit(tmp$skill)))
             }
-        })
-        observe({
-            isolate(sel <- intersect(skill_list(), input$skill_list))
-            if (length(sel) < 1) sel <- skill_list() ## select all
-            updatePickerInput(session, "skill_list", choices = skill_list(), selected = sel)
-        })
+            sl_hash <- digest::digest(sl)
+            if (last_skill_list_hash != sl_hash) {
+                if (trace_execution) cat("  updating skill selector\n")
+                last_skill_list_hash <<- sl_hash
+                skill_list(sl)
+##            isolate(cat("+SS:\n", str(input$skill_list), "\n-SS\n"))
+                isolate(sel <- intersect(sl, input$skill_list))
+                if (length(sel) < 1) sel <- sl ## select all
+                updatePickerInput(session, "skill_list", choices = sl, selected = sel)
+            } else {
+                if (trace_execution) cat("  skill list unchanged\n")
+            }
+        })##, priority = -101)
 
         ## Pre-defined playlist
         playlist_list = reactive({
@@ -449,41 +467,6 @@ ovva_shiny_server <- function(app_data) {
 
         ## Help
         observeEvent(input$help, rintrojs::introjs(session, options = list("nextLabel" = "Next", "prevLabel" = "Previous", "skipLabel" = "Skip")))
-
-        game_table_dropdown <- reactive({
-            if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
-                output$no_game_data <- renderUI(
-                    if (is.null(input$season)) {
-                        tags$div(class = "alert alert-info", "No competition data sets. Log in?")
-                    } else if (!is.null(meta()) && is.null(pbp())) {
-                        tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                    } else if (is.null(meta()) && have_done_startup()) {
-                        if (isTRUE(isolate(got_no_video()))) {
-                            tags$div(class = "alert alert-danger", "No matches with video could be found.")
-                        } else {
-                            tags$div(class = "alert alert-danger", "Sorry, something went wrong processing this data set.")
-                        }
-                    } else {
-                        NULL
-                    })
-                ## hide the game selector if we have no games with video (or haven't selected a data set)
-                js_hide("game_table_dropdown")
-                character()
-            } else {
-                output$no_game_data <- renderUI(NULL)
-                js_show("game_table_dropdown")
-                ## Customize pbp
-                datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
-                datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
-                ## named list, so that display_ID gets shown but the code can operate directly on match_id as the selected value
-                setNames(as.list(datatble$match_id), datatble$display_ID)
-            }
-        })
-
-        observe({
-            isolate(sel <- intersect(game_table_dropdown(), input$game_table_dropdown))
-            updatePickerInput(session, "game_table_dropdown", choices = game_table_dropdown(), selected = sel)
-        })
 
         ## which vars are available for custom sort?
         observe({
