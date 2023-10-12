@@ -258,7 +258,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Team
-        team_list = reactiveVal(NULL)
+        team_list <- reactiveVal(NULL)
         observe({
             if (trace_execution) cat("recalculating team_list\n")
             blah <- selected_match_id() ## reactive to this
@@ -271,7 +271,7 @@ ovva_shiny_server <- function(app_data) {
             }
             team_list(tl)
             isolate(sel <- intersect(tl, input$team_list))
-            if (length(sel) < 1) sel <- tl ## select all
+            if (length(sel) < 1) sel <- character()## ## select none, which will be treated as "no filter" ## previously tl ## select all
             updatePickerInput(session, "team_list", choices = tl, selected = sel)
         })
 
@@ -284,7 +284,7 @@ ovva_shiny_server <- function(app_data) {
             pl <- if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$team, input$team_list))
                 sort(unique(na.omit(tmp$player_name)))
             }
             pl_hash <- digest::digest(pl)
@@ -293,7 +293,7 @@ ovva_shiny_server <- function(app_data) {
                 last_player_list_hash <<- pl_hash
                 player_list(pl)
                 isolate(sel <- intersect(pl, input$player_list))
-                if (length(sel) < 1) sel <- pl ## select all
+                if (length(sel) < 1) sel <- character() ## select none, which will be treated as "no filter" ## previously pl ## select all
                 updatePickerInput(session, "player_list", choices = pl, selected = sel)
             } else {
                 if (trace_execution) cat("  player list unchanged\n")
@@ -301,14 +301,14 @@ ovva_shiny_server <- function(app_data) {
         })##, priority = -100)
 
         ## Skill
-        skill_list = reactiveVal(NULL)
+        skill_list <- reactiveVal(NULL)
         last_skill_list_hash <- ""
         observe({
             if (trace_execution) cat("recalculating skill_list\n")
             sl <- if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$team, input$team_list))
                 sort(unique(na.omit(tmp$skill)))
             }
             sl_hash <- digest::digest(sl)
@@ -318,7 +318,7 @@ ovva_shiny_server <- function(app_data) {
                 skill_list(sl)
 ##            isolate(cat("+SS:\n", str(input$skill_list), "\n-SS\n"))
                 isolate(sel <- intersect(sl, input$skill_list))
-                if (length(sel) < 1) sel <- sl ## select all
+                if (length(sel) < 1) sel <- character() ## select none, which will be treated as "no filter" ## previously sl ## select all
                 updatePickerInput(session, "skill_list", choices = sl, selected = sel)
             } else {
                 if (trace_execution) cat("  skill list unchanged\n")
@@ -326,9 +326,10 @@ ovva_shiny_server <- function(app_data) {
         })##, priority = -101)
 
         ## Pre-defined playlist
-        playlist_list = reactive({
-            tryCatch(app_data$playlist_handler$specific[app_data$playlist_handler$skill %in% input$skill_list],
-                     error = function(e) dplyr::tibble(skill = character(), specific = character(), fun = list()))
+        playlist_list <- reactive({
+            tryCatch(
+                app_data$playlist_handler$specific[all_or_filter(app_data$playlist_handler$skill, input$skill_list)],
+                error = function(e) character())
         })
         output$playlist_based_ui <- renderUI({
             if (length(playlist_list()) < 1) {
@@ -351,7 +352,7 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Highlights
-        highlight_list = reactive({
+        highlight_list <- reactive({
             c("None", app_data$highlight_handler$specific[app_data$highlight$skill %in% "Highlights"])
         })
         output$highlight_based_ui <- renderUI({
@@ -371,11 +372,11 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Skilltype
-        skilltype_list = reactive({
+        skilltype_list <- reactive({
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$skill %in% input$skill_list, .data$team %in% input$team_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$skill, input$skill_list), all_or_filter(.data$team, input$team_list))
                 sort(unique(tmp$skilltype))
             }
         })
@@ -385,11 +386,11 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Phase
-        phase_list = reactive({
+        phase_list <- reactive({
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$team, input$team_list), all_or_filter(.data$skill, input$skill_list))
                 sort(unique(tmp$phase))
             }
         })
@@ -400,11 +401,11 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Advanced filter
-        adFilter_list = reactive({
+        adFilter_list <- reactive({
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1) {
                 character()
             } else {
-                temp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                temp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$team, input$team_list), all_or_filter(.data$skill, input$skill_list))
                 avail <- colnames(temp)
                 avail <- avail[vapply(avail, function(z) !all(is.na(temp[[z]])), FUN.VALUE = TRUE)] ## exclude all-NA cols
                 avail <- adfilter_cols_to_show[adfilter_cols_to_show %in% avail] ## only those in our pre-defined list of adfilter_cols_to_show
@@ -423,14 +424,14 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Advanced filter value
-        adFilterValue_list = reactive({
+        adFilterValue_list <- reactive({
             col_to_select <- input$adFilter_list
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$team, input$team_list), all_or_filter(.data$skill, input$skill_list))
                 sort(unique(tmp[[col_to_select]]))
             }
         })
@@ -448,14 +449,14 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Advanced filter 2 value
-        adFilterBValue_list = reactive({
+        adFilterBValue_list <- reactive({
             col_to_select <- input$adFilterB_list
             if (is.null(col_to_select) || !nzchar(col_to_select)) return(list())
             col_to_select <- col_to_select[nzchar(col_to_select)]
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || length(col_to_select) < 1) {
                 character()
             } else {
-                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), .data$player_name %in% input$player_list, .data$team %in% input$team_list, .data$skill %in% input$skill_list)
+                tmp <- dplyr::filter(pbp_augment(), .data$match_id %in% selected_match_id(), all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$team, input$team_list), all_or_filter(.data$skill, input$skill_list))
                 sort(unique(tmp[[col_to_select]]))
             }
         })
@@ -470,14 +471,17 @@ ovva_shiny_server <- function(app_data) {
 
         ## which vars are available for custom sort?
         observe({
-            sortchc <- c()
+            ##sortchc <- c()
             can_sort_on <- function(z) !is.null(z) && (length(z) < 1 || length(z) > 1)
-            if (can_sort_on(selected_match_id())) sortchc <- c(sortchc, Game = "match_id")
-            if (can_sort_on(input$team_list)) sortchc <- c(sortchc, Team = "team")
-            if (can_sort_on(input$player_list)) sortchc <- c(sortchc, Player = "player_name")
-            if (can_sort_on(input$skill_list)) sortchc <- c(sortchc, Skill = "skill")
-            if (can_sort_on(input$skilltype_list)) sortchc <- c(sortchc, `Skill type` = "skilltype")
-            if (can_sort_on(input$phase_list)) sortchc <- c(sortchc, `Phase` = "phase")
+            ## some inputs can now be NULL (none selected) meaning no filter applied
+            ## so assume that the fixed ones (match, team, player, skill, skill type, phase) can always be sorted on?
+            sortchc <- c(Game = "match_id", Team = "team", Player = "player_name", Skill = "skill", `Skill type` = "skilltype", `Phase` = "phase")
+            ## if (can_sort_on(selected_match_id())) sortchc <- c(sortchc, Game = "match_id")
+            ## if (can_sort_on(input$team_list)) sortchc <- c(sortchc, Team = "team")
+            ## if (can_sort_on(input$player_list)) sortchc <- c(sortchc, Player = "player_name")
+            ## if (can_sort_on(input$skill_list)) sortchc <- c(sortchc, Skill = "skill")
+            ## if (can_sort_on(input$skilltype_list)) sortchc <- c(sortchc, `Skill type` = "skilltype")
+            ## if (can_sort_on(input$phase_list)) sortchc <- c(sortchc, `Phase` = "phase")
             if (can_sort_on(input$adFilter_list)) {
                 adfvar <- input$adFilter_list
                 adfvarname <- names(intersect(adFilter_list(), adfvar))
@@ -509,29 +513,22 @@ ovva_shiny_server <- function(app_data) {
                 if (trace_execution) cat("recalculating playstable_data\n")
                 pbp <- pbp_augment()
                 meta <- meta()
-                game_select <- selected_match_id()
-                team_select <- input$team_list
-                player_select <- input$player_list
-                skill_select <- input$skill_list
-                skilltype_select <- input$skilltype_list
-                phase_select <- input$phase_list
                 filter_var <- input$adFilter_list
                 filterB_var <- input$adFilterB_list
-                playlist_select <- input$playlist_list
-                highlight_select <- input$highlight_list
-                was_playlist <- !is.null(playlist_select) && !is.null(skill_select) && !is.null(game_select) && !is.null(player_select) && !is.null(team_select)
-                was_highlight <- !is.null(highlight_select) && !highlight_select %eq% "None" && !is.null(game_select)
+                ## skill, player, team inputs can be NULL (treated as "no filter applied")
+                was_playlist <- !is.null(input$playlist_list) && !is.null(selected_match_id()) ##&& !is.null(input$skill_list) && !is.null(input$player_list) && !is.null(input$team_list)
+                was_highlight <- !is.null(input$highlight_list) && !input$highlight_list %eq% "None" && !is.null(selected_match_id())
                 if (was_playlist || was_highlight) {
-                    myfuns <- if (was_playlist) funs_from_playlist(playlist_select) else funs_from_highlight(highlight_select)
-                    if (length(game_select) == 1) {
+                    myfuns <- if (was_playlist) funs_from_playlist(input$playlist_list) else funs_from_highlight(input$highlight_list)
+                    if (length(selected_match_id()) == 1) {
                         ## apply each of myfuns in turn and rbind the results
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% game_select), team = team_select, player = player_select)))
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) myfun(x = dplyr::filter(pbp, .data$match_id %in% selected_match_id()), team = input$team_list, player = input$player_list)))
                     } else{
-                        pbp_tmp <- dplyr::filter(pbp, .data$match_id %in% game_select)
-                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = team_select, player = player_select))))
+                        pbp_tmp <- dplyr::filter(pbp, .data$match_id %in% selected_match_id())
+                        pbp_tmp <- bind_rows(lapply(myfuns, function(myfun) bind_rows(lapply(split(pbp_tmp, pbp_tmp$match_id), myfun, team = input$team_list, player = input$player_list))))
                     }
                 } else {
-                    pbp_tmp <- dplyr::filter(pbp, .data$player_name %in% input$player_list &.data$skill %in% input$skill_list & .data$team %in% input$team_list & .data$match_id %in% selected_match_id())
+                    pbp_tmp <- dplyr::filter(pbp, all_or_filter(.data$player_name, input$player_list), all_or_filter(.data$skill, input$skill_list), all_or_filter(.data$team, input$team_list), .data$match_id %in% selected_match_id())
                     if (!is.null(input$skilltype_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$skilltype %in% input$skilltype_list)
                     if (!is.null(input$phase_list)) pbp_tmp <- dplyr::filter(pbp_tmp, .data$phase %in% input$phase_list)
                 }
@@ -547,7 +544,7 @@ ovva_shiny_server <- function(app_data) {
                 ## sort according to chosen vars
                 if (length(input$playlist_sort)) {
                     temp <- intersect(input$playlist_sort, names(pbp_tmp))
-                    pbp_tmp <- dplyr::arrange(pbp_tmp, across(temp))
+                    pbp_tmp <- dplyr::arrange(pbp_tmp, across(all_of(temp)))
                 }
                 pbp_tmp
             }

@@ -279,3 +279,9 @@ get_os <- function() {
 
 ## convenience function to silence the fa warnings about icons
 icon <- function(...) shiny::icon(..., verify_fa = FALSE)
+
+## helper function to filter according to a selection
+##  if the selection is empty, return all TRUE, otherwise the elements of x that are in the selection
+all_or_filter <- function(x, selection) {
+    if (length(selection) < 1) rep(TRUE, length(x)) else x %in% selection
+}
