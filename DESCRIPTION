@@ -26,6 +26,7 @@ Imports:
     ovideo (>= 0.17.3),
     peranavolley,
     rappdirs,
+    rlang,
     servr (>= 0.15.1),
     shiny,
     shinyWidgets,
