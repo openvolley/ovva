@@ -55,7 +55,7 @@ ovva_playlist_handler <- function() {
         x[x$team %in% team & x$player_name %in% player & x$skill %eq% "Attack" & (x$evaluation %eq% "Blocked for reattack" | x$special_code %eq% "Block control"), ]
     }
     out$fun[[which(out$skill == "Block" & out$specific == "Triple block")]] <- function(x, team, player) {
-        x[x$opposing_team %in% team & x$skill %eq% "Attack" & x$num_players %eq% "3 player block", ]
+        x[x$opposition_team %in% team & x$skill %eq% "Attack" & x$num_players %eq% "3 player block", ]
     }
     out$fun[[which(out$skill == "Reception" & out$specific == "Reception after a bad pass")]] <- function(x, team, player) {
         ## all receps for this player
