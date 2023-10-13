@@ -33,8 +33,8 @@ var2fc <- function(x) {
 preprocess_data <- function(x, data_type = "indoor") {
     if (!"end_cone" %in% names(x)) x$end_cone <- NA_integer_
     if (!"receiving_team" %in% names(x)) {
-        x <- mutate(x, receiving_team = case_when(.data$serving_team %eq% .data$home_team ~ .data$visiting_team,
-                                                  .data$serving_team %eq% .data$visiting_team ~ .data$home_team))
+        x <- mutate(x, receiving_team = case_when(.data$serving_team == .data$home_team ~ .data$visiting_team,
+                                                  .data$serving_team == .data$visiting_team ~ .data$home_team))
     }
     if (!all(c("receiving_player", "reception_grade") %in% names(x))) {
         x <- x[, setdiff(names(x), c("receiving_player", "reception_grade"))]
@@ -57,50 +57,49 @@ preprocess_data <- function(x, data_type = "indoor") {
                                                        .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
                                                        .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
                                                        .data$visiting_setter_position == 6 ~ .data$visiting_player_id6))
-            x <- mutate(x, setter_id = case_when(.data$team %eq% .data$home_team ~ .data$home_setter_id,
-                                                 .data$team %eq% .data$visiting_team ~ .data$visiting_setter_id),
-                        opposition_setter_id = case_when(.data$team %eq% .data$visiting_team ~ .data$home_setter_id,
-                                                         .data$team %eq% .data$home_team ~ .data$visiting_setter_id))
+            x <- mutate(x, setter_id = case_when(.data$team == .data$home_team ~ .data$home_setter_id,
+                                                 .data$team == .data$visiting_team ~ .data$visiting_setter_id),
+                        opposition_setter_id = case_when(.data$team == .data$visiting_team ~ .data$home_setter_id,
+                                                         .data$team == .data$home_team ~ .data$visiting_setter_id))
             px <- na.omit(distinct(x[, c("player_id", "player_name")]))
             px <- px[!px$player_id %in% px$player_id[duplicated(px$player_id)], ]
             x <- left_join(x, dplyr::rename(px, setter_on_court = "player_name"), by = c(setter_id = "player_id"))
             x <- left_join(x, dplyr::rename(px, opposition_setter_on_court = "player_name"), by = c(opposition_setter_id = "player_id"))
         }
         if (!"receiving_setter_position" %in% names(x)) {
-            x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team %eq% .data$home_team ~ .data$home_setter_position,
-                                                                 .data$receiving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+            x <- mutate(x, receiving_setter_position = case_when(.data$receiving_team == .data$home_team ~ .data$home_setter_position,
+                                                                 .data$receiving_team == .data$visiting_team ~ .data$visiting_setter_position))
         }
         if (!"serving_setter_position" %in% names(x)) {
-            x <- mutate(x, serving_setter_position = case_when(.data$serving_team %eq% .data$home_team ~ .data$home_setter_position,
-                                                               .data$serving_team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+            x <- mutate(x, serving_setter_position = case_when(.data$serving_team == .data$home_team ~ .data$home_setter_position,
+                                                               .data$serving_team == .data$visiting_team ~ .data$visiting_setter_position))
         }
         if (!"opposition_setter_position" %in% names(x)) {
-            x <- mutate(x, opposition_setter_position = case_when(.data$team %eq% .data$home_team ~ .data$visiting_setter_position,
-                                                                  .data$team %eq% .data$visiting_team ~ .data$home_setter_position))
+            x <- mutate(x, opposition_setter_position = case_when(.data$team == .data$home_team ~ .data$visiting_setter_position,
+                                                                  .data$team == .data$visiting_team ~ .data$home_setter_position))
         }
         if (!"setter_position" %in% names(x)) {
-            x <- mutate(x, setter_position = case_when(.data$team %eq% .data$home_team ~ .data$home_setter_position,
-                                                       .data$team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+            x <- mutate(x, setter_position = case_when(.data$team == .data$home_team ~ .data$home_setter_position,
+                                                       .data$team == .data$visiting_team ~ .data$visiting_setter_position))
         }
     }
     if (!"breakpoint/sideout" %in% names(x)) {
-        x <- mutate(x, `breakpoint/sideout` = case_when(.data$team %eq% .data$receiving_team ~ "Sideout",
-                                                        .data$team %eq% .data$serving_team ~ "Breakpoint"))
+        x <- mutate(x, `breakpoint/sideout` = case_when(.data$team == .data$receiving_team ~ "Sideout",
+                                                        .data$team == .data$serving_team ~ "Breakpoint"))
     }
     if (!"opposition_team" %in% names(x)) {
-        x <- mutate(x, opposition_team = case_when(.data$team %eq% .data$home_team ~ .data$visiting_team,
-                                                 .data$team %eq% .data$visiting_team ~ .data$home_team))
+        x <- mutate(x, opposition_team = case_when(.data$team == .data$home_team ~ .data$visiting_team,
+                                                 .data$team == .data$visiting_team ~ .data$home_team))
     }
     if (!"freeball_over" %in% names(x)) {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
-        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball",
-                    lag(.data$match_id) %eq% .data$match_id, ##lead(.data$match_id) %eq% .data$match_id,
-                    lag(.data$point_id) %eq% .data$point_id, ##lead(.data$point_id) %eq% .data$point_id,
-                    ((!is.na(lead(.data$team)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
+        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lag(.data$match_id) %eq% .data$match_id & lag(.data$point_id) %eq% .data$point_id &
+                           ((!is.na(lead(.data$team)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
     }
+
     if (!all(c("pt_serve_zone", "ts_pass_zone") %in% names(x))) {
         x <- x[, setdiff(names(x), c("pt_serve_zone", "ts_pass_zone"))]
-        tempsrv <- dplyr::rename(dplyr::filter(ungroup(x), .data$skill %eq% "Serve"), pt_serve_zone = "start_zone")
+        tempsrv <- dplyr::rename(dplyr::filter(ungroup(x), .data$skill == "Serve"), pt_serve_zone = "start_zone")
         tempsrv <- dplyr::filter(ungroup(mutate(group_by(tempsrv, .data$match_id, .data$point_id), ok = n() == 1), .data$ok))
         x <- left_join(x, dplyr::select(tempsrv, "match_id", "point_id", "pt_serve_zone"), by = c("match_id", "point_id"))
         touchsum <- group_by(dplyr::filter(ungroup(x), !is.na(.data$team)), .data$match_id, .data$team, .data$team_touch_id)
@@ -108,8 +107,8 @@ preprocess_data <- function(x, data_type = "indoor") {
         x <- left_join(x, dplyr::select(touchsum, -"team"), by = c("match_id", "team_touch_id"))
     }
     ## separate freeballs into "Freeball dig" and "Freeball attack" (comment these lines out to disable this)
-    x <- mutate(x, skill = case_when(.data$skill %eq% "Freeball" & .data$freeball_over ~ "Freeball over",
-                                     .data$skill %eq% "Freeball" ~ "Freeball dig",
+    x <- mutate(x, skill = case_when(.data$skill == "Freeball" & .data$freeball_over ~ "Freeball over",
+                                     .data$skill == "Freeball" ~ "Freeball dig",
                                      TRUE ~ .data$skill))
     x <- mutate(x, skilltype = case_when(.data$skill %in% c("Serve", "Reception") ~ .data$skill_type,
                                          .data$skill == "Attack" ~ ifelse(is.na(.data$attack_description), .data$skill_type, .data$attack_description),
