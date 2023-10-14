@@ -499,6 +499,8 @@ ovva_shiny_server <- function(app_data) {
         })
 
         ## Table of all actions as per selected_match_id() and player_id() and evaluation()
+        ## these three are vectors with length equal to number of rows in playstable_data_raw(), and indexed according to playstable_data_raw() row ordering
+        ## the actual playstable_data() is playstable_data_raw() but with user-deleted rows removed
         playstable_to_delete <- NULL
         playstable_ticked <- NULL
         playstable_display_order <- NULL
@@ -551,56 +553,56 @@ ovva_shiny_server <- function(app_data) {
         }), 250)
 
         ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
-        deltrigger <- reactiveVal(0)
+        pl_check_trigger <- reactiveVal(0)
         playstable_data_bouncy <- reactiveVal(NULL)
         playstable_data <- debounce(playstable_data_bouncy, 500)
         ##playstable_data <- debounce(reactive({
         last_pt_hash <- ""
         observe({
             if (trace_execution) cat("checking playstable_data\n")
-            blah <- deltrigger() ## react to this
-            ptdel <- playstable_to_delete
-            ord <- if (!is.null(playstable_display_order)) playstable_display_order else seq_nrows(playstable_data_raw())
-            out <- playstable_data_raw()[ord, ]
-            if (!is.null(ptdel) && length(ptdel) == nrow(playstable_data_raw())) {
-                out <- out[!ptdel[ord], ]
-            }
-            pt_hash <- digest::digest(out)
-            if (last_pt_hash != pt_hash) {
-                if (trace_execution) cat("  updating playstable_data\n")
-                last_pt_hash <<- pt_hash
-                playstable_data_bouncy(out)
-            } else {
-                if (trace_execution) cat("  playstable_data has not changed\n")
+            if (!is.null(playstable_data_raw())) {
+                blah <- pl_check_trigger() ## react to this
+                ptdel <- playstable_to_delete
+                ord <- if (length(playstable_display_order) == nrow(playstable_data_raw())) playstable_display_order else seq_nrows(playstable_data_raw())
+                ord <- ord[!ord %in% which(ptdel)]
+                out <- playstable_data_raw()[ord, ]
+                pt_hash <- digest::digest(out)
+                if (last_pt_hash != pt_hash) {
+                    if (trace_execution) cat("  updating playstable_data\n")
+                    last_pt_hash <<- pt_hash
+                    playstable_data_bouncy(out)
+                } else {
+                    if (trace_execution) cat("  playstable_data has not changed\n")
+                }
             }
         })##, 500)
 
         observeEvent(input$randomize_playlist, {
             if (length(playstable_display_order) > 0) {
                 playstable_display_order <<- sample.int(length(playstable_display_order), size = length(playstable_display_order), replace = FALSE)
-                is_fresh_playlist <<- FALSE
-                deltrigger(deltrigger() + 1L)
+                is_fresh_playlist <<- TRUE ## this forces the playlist to re-start playing from the first item
+                pl_check_trigger(pl_check_trigger() + 1L)
             }
         })
         observeEvent(input$delete_ticked, {
-            if (any(playstable_ticked)) {
+            if (isTRUE(any(playstable_ticked[!playstable_to_delete]))) {
                 plchk <- playstable_to_delete
                 plchk[which(playstable_ticked)] <- TRUE
                 playstable_to_delete <<- plchk
                 is_fresh_playlist <<- FALSE
-                deltrigger(deltrigger() + 1L)
+                pl_check_trigger(pl_check_trigger() + 1L)
             }
         })
 
         observeEvent(input$keep_ticked, {
-            if (any(playstable_ticked)) {
+            if (isTRUE(any(playstable_ticked[!playstable_to_delete]))) {
                 plchk <- playstable_to_delete
                 ## anything already deleted remains deleted
                 ## anything not ticked gets added to the delete list
                 plchk[which(playstable_to_delete | !playstable_ticked)] <- TRUE
                 playstable_to_delete <<- plchk
                 is_fresh_playlist <<- FALSE
-                deltrigger(deltrigger() + 1L)
+                pl_check_trigger(pl_check_trigger() + 1L)
             }
         })
 
@@ -609,7 +611,7 @@ ovva_shiny_server <- function(app_data) {
             playstable_to_delete <<- rep(FALSE, length(playstable_to_delete))
             playstable_display_order <<- seq_along(playstable_to_delete)
             is_fresh_playlist <<- FALSE
-            deltrigger(deltrigger() + 1L)
+            pl_check_trigger(pl_check_trigger() + 1L)
         })
 
         observeEvent(input$toggle_plitem, {
@@ -618,6 +620,7 @@ ovva_shiny_server <- function(app_data) {
                 plchk <- playstable_ticked
                 thisid <- strsplit(input$toggle_plitem, "@")[[1]][1]
                 totoggle <- as.numeric(sub("^pl_", "", thisid))
+                ## totoggle will be the row number in the original data, i.e. playstable_data()$ROWID
                 ##cat("toggling:\n "); print(totoggle)
                 plchk[totoggle] <- !plchk[totoggle]
                 playstable_ticked <<- plchk
@@ -826,7 +829,6 @@ ovva_shiny_server <- function(app_data) {
             ## TODO also check for mixed sources, which we can't handle yet
             video_player_type(vpt)
             if (!is.null(input$highlight_list)) {
-                ##pl <- ovideo::ov_video_playlist_pid(x = event_list, meta = meta_video, type = vpt, extra_cols = c("match_id", "subtitle", plays_cols_to_show))
                 pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
             } else {
                 pl <- ovideo::ov_video_playlist(x = event_list, meta = meta_video, type = vpt, timing = clip_timing(), extra_cols = c("match_id", "subtitle", "subtitleskill", plays_cols_to_show))
