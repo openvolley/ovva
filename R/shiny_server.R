@@ -845,7 +845,8 @@ ovva_shiny_server <- function(app_data) {
             ## Customize pbp
             meta_video <- video_meta()
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(meta()) || is.null(selected_match_id()) || is.null(meta_video) || nrow(meta_video) < 1 || is.null(playstable_data()) || nrow(playstable_data()) < 1) {
-                NULL
+                ## TODO does that need to be reactive to all of those things? Or just playstable_data() and video_meta() ?
+                playlist(NULL)
             } else {
                 pl <- build_playlist(playstable_data(), meta_video = meta_video)
                 pl_hash <- digest::digest(pl)
