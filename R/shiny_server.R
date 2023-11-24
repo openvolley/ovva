@@ -170,8 +170,7 @@ ovva_shiny_server <- function(app_data) {
                             ## augment the match_id values with input$season to match what we did to the match_ids in the metadata above
                             mydat$match_id <- paste0(sdigest, "|", mydat$match_id)
                             ## check for all-missing video times now
-                            no_video_times_mids <- mydat %>% group_by(.data$match_id) %>% dplyr::summarize(nv = all(is.na(.data$video_time))) %>% dplyr::filter(.data$nv) %>% pull(.data$match_id)
-cat("nvt:\n"); print(no_video_times_mids)
+                            no_video_times_mids <- mydat %>% group_by(.data$match_id) %>% dplyr::summarize(nv = all(is.na(.data$video_time))) %>% dplyr::filter(.data$nv) %>% dplyr::pull(.data$match_id)
                             ## remove those from out
                             out <- Filter(Negate(is.null), lapply(out, function(z) if (z$match_id %in% no_video_times_mids) NULL else z))
                             if (length(out) < 1) {
