@@ -970,16 +970,20 @@ ovva_shiny_server <- function(app_data) {
                               tags$button(tags$span(icon("expand", style = "vertical-align:middle;")), onclick = "dvpl.fullscreen();", title = "Full screen"),
                               tags$button(tags$span(icon("volume-mute", style = "vertical-align:middle;")), onclick = "dvpl.toggle_mute()", title = "Toggle mute")
                               ),
-                     tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill"),
-                              uiOutput("create_clip_button_ui", inline = TRUE)))
+                     tags$div(style="margin-top:10px;", tags$span(id = "subtitle", "Score"), tags$span(id = "subtitleskill", "Skill")))
         })
 
         clip_filename <- reactiveVal("")
         clip_status <- reactiveVal(NULL)
         output$create_clip_button_ui <- renderUI({
             ok <- !is.null(playlist()) && nrow(playlist()) > 0 && !video_player_type() %in% c("youtube", "twitch")
-            ## also check that videos are not remote
-            ok <- ok && !any(grepl("^https?://", playlist()$video_src, ignore.case = TRUE))
+            ## also check that videos are not remote - exclude videos served by http[s], but not if they are being served by the local (ovva-initiated) server
+            temp_src <- playlist()$video_src
+            if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
+                is_local_url <- substr(temp_src, 1, nchar(app_data$video_server_url)) == app_data$video_server_url
+                temp_src[which(is_local_url)] <- "" ## these are ok
+            }
+            ok <- ok && !any(grepl("^https?://", temp_src, ignore.case = TRUE))
             if (ok) {
                 actionButton("create_clip_button", "Download clip")
             } else {
@@ -1048,6 +1052,7 @@ ovva_shiny_server <- function(app_data) {
         output$chart_ui <- renderUI({
             out <- list(tags$div(style = "height:24px;"),
                         if (pl_can_be_saved()) downloadButton("download_playlist", label = "Download playlist CSV"),
+                        uiOutput("create_clip_button_ui", inline = TRUE),
                         uiOutput("chart2_ui"))
             do.call(tagList, Filter(Negate(is.null), out))
         })
