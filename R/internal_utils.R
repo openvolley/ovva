@@ -239,7 +239,7 @@ check_timing_df <- function(x) {
 timing_tstart <- function(skill, phase, start_offset = -5, timing_df) {
     if (missing(start_offset) && !missing(timing_df) && check_timing_df(timing_df)) {
         try({
-            chk <- timing_df$start_offset[timing_df$skill %eq% skill && timing_df$phase %eq% phase]
+            chk <- timing_df$start_offset[timing_df$skill %eq% skill & timing_df$phase %eq% phase]
             if (length(chk) == 1 && !is.na(chk)) start_offset <- chk
         })
     }
@@ -248,7 +248,7 @@ timing_tstart <- function(skill, phase, start_offset = -5, timing_df) {
 timing_tdur <- function(skill, phase, duration = 8, timing_df) {
     if (missing(duration) && !missing(timing_df) && check_timing_df(timing_df)) {
         try({
-            chk <- timing_df$duration[timing_df$skill %eq% skill && timing_df$phase %eq% phase]
+            chk <- timing_df$duration[timing_df$skill %eq% skill & timing_df$phase %eq% phase]
             if (length(chk) == 1 && !is.na(chk)) duration <- chk
         })
     }
