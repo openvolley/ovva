@@ -185,7 +185,7 @@ ovva_shiny_server <- function(app_data) {
                                 got_no_video(0L)
                                 ## now process pbp()
                                 mydat <- mydat[mydat$match_id %in% my_match_ids, ]
-                                mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = min(as.Date(.data$time), na.rm = TRUE)))
+                                mydat <- ungroup(mutate(group_by(mydat, .data$match_id), game_date = if (all(is.na(.data$time))) as.Date(NA) else min(as.Date(.data$time), na.rm = TRUE)))
                                 ## replace missing game dates with those from meta, if we can
                                 mydat <- left_join(mydat, game_dates_meta %>% dplyr::rename(game_date2 = "game_date"), by = "match_id") %>%
                                     mutate(game_date = if_else(is.na(.data$game_date) | is.infinite(.data$game_date), .data$game_date2, .data$game_date)) %>%
