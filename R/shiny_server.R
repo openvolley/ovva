@@ -254,7 +254,12 @@ ovva_shiny_server <- function(app_data) {
                        js_show("game_table_dropdown")
                        ## Customize pbp
                        datatble <- distinct(pbp_augment(), .data$match_id, .data$game_date, .data$visiting_team, .data$home_team, .keep_all = FALSE)
-                       datatble <- dplyr::arrange(dplyr::mutate(datatble, display_ID = paste0(format(.data$game_date, "%d %b %Y"),": ",.data$home_team," - ",.data$visiting_team)), .data$game_date)
+                       if (all(is.na(datatble$game_date))) {
+                           datatble <- dplyr::mutate(datatble, display_ID = paste0("Unknown date: ",.data$home_team," - ",.data$visiting_team))
+                       } else {
+                           datatble <- dplyr::mutate(datatble, display_ID = paste0(ifelse(is.na(.data$game_date), "Unknown date", format(.data$game_date, "%d %b %Y")),": ",.data$home_team," - ",.data$visiting_team))
+                       }
+                       datatble <- dplyr::arrange(datatble, .data$game_date)
                        ## named list, so that display_ID gets shown but the code can operate directly on match_id as the selected value
                        setNames(as.list(datatble$match_id), datatble$display_ID)
                    }
