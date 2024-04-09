@@ -37,11 +37,11 @@ $(document).on('shiny:sessioninitialized', function() {
 function toggle_pl_item(cb) { Shiny.setInputValue('toggle_plitem', cb.id + '@' + new Date().getTime()); }
 function mp4_pl_item(cb) { Shiny.setInputValue('mp4_plitem', cb.id + '@' + new Date().getTime()); }"),
 tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dv_h_ctr = dvpl.suspend(); }}; dv_h_unsuspend = function() { if (dv_h_ctr) { dv_h_ctr = false; dvpl.unsuspend(); }}; "),
-tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;}"),
+tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;} .reminder { box-shadow:0 0 4px 4px #E87322B0; } #season_highlight { padding:2px; border-radius:6px; }"),
 ),
 shiny::wellPanel(
 fluidRow(column(4, tags$h5("1. Select data"),
-                fluidRow(column(6, selectInput("season", label = "Data set", choices = NULL),
+                fluidRow(column(6, tags$div(id = "season_highlight", selectInput("season", label = "Data set", choices = NULL)),
                                 pickerInput(inputId = "game_table_dropdown", label = "Games", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
                                 uiOutput("no_game_data"), uiOutput("processing_note")))),
          column(8, tags$h5("2. Apply filters"),

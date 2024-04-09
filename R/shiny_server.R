@@ -53,11 +53,20 @@ ovva_shiny_server <- function(app_data) {
                 app_data$data_path
             }
         })
+
+        ## highlight the season selector if it's empty
+        observe({
+            if (isTRUE(app_data$no_initial_season_selection)) {
+                if (identical(input$season, "")) evaljs("$('#season_highlight').addClass('reminder');") else evaljs("$('#season_highlight').removeClass('reminder');")
+            }
+        })
+
         ## update the season choices
         season_choices <- reactive(names(get_data_paths()))
         observe({
             chc <- season_choices()
             isolate(sel <- input$season)
+            if (isTRUE(app_data$no_initial_season_selection)) chc <- c("Choose" = "", chc) ## no initial selection in this case
             if (is.null(sel) || !sel %in% chc) sel <- chc[1]
             updateSelectInput(session, "season", choices = chc, selected = sel)
         })
