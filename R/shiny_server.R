@@ -528,12 +528,12 @@ ovva_shiny_server <- function(app_data) {
             updateSelectInput(session, "playlist_sort", choices = sortchc, selected = sel)
         })
 
-        ## Table of all actions as per selected_match_id() and player_id() and evaluation()
-        ## these three are vectors with length equal to number of rows in playstable_data_raw(), and indexed according to playstable_data_raw() row ordering
-        ## the actual playstable_data() is playstable_data_raw() but with user-deleted rows removed
-        playstable_to_delete <- NULL
-        playstable_ticked <- NULL
-        playstable_display_order <- NULL
+        playstable_to_delete <- NULL ## vector of logical
+        playstable_ticked <- NULL ## vector of logical
+        playstable_display_order <- NULL ## vector of integers
+        ## these three variables are vectors with length equal to number of rows in playstable_data_raw(), and indexed according to playstable_data_raw() row ordering. The actual playstable_data() is playstable_data_raw() but ordered according to playstable_display_order and with user-deleted rows removed
+
+        ## the raw playstable data (i.e. before reordering or deleting any rows)
         playstable_data_raw <- debounce(reactive({
             ## Customize pbp
             if (is.null(pbp_augment()) || nrow(pbp_augment()) < 1 || is.null(selected_match_id()) || is.null(meta())) {
@@ -573,20 +573,37 @@ ovva_shiny_server <- function(app_data) {
                 pbp_tmp$ROWID <- seq_nrows(pbp_tmp) ## keep track of original row numbers for deletion
                 master_playstable_selected_row <<- 1 ## fresh table/playlist, start from row 1
                 is_fresh_playlist <<- TRUE
-                ## sort according to chosen vars
-                if (length(input$playlist_sort)) {
-                    temp <- intersect(input$playlist_sort, names(pbp_tmp))
-                    pbp_tmp <- dplyr::arrange(pbp_tmp, across(all_of(temp)))
-                }
+                ## set playstable_display_order according to chosen vars but leave pbp_tmp with its default ordering and leave this block unreactive to input$playlist_sort
+                playstable_display_order <<- calc_playstable_order(pbp_tmp)
                 pbp_tmp
             }
         }), 250)
 
-        ## the actual playstable_data is playstable_data_raw but with user-deleted rows removed
+        ## helper function to generate the ordering of the playstable, using input$playlist_sort if it has been set
+        calc_playstable_order <- function(pl) {
+            if (missing(pl)) pl <- isolate(playstable_data_raw())
+            if (is.null(pl)) return(NULL)
+            pls <- isolate(input$playlist_sort)
+            if (length(pls) < 1) return(seq_nrows(pl)) ## default ordering
+            ## otherwise according to input$playlist_sort
+            temp <- intersect(pls, names(pl))
+            pl %>% ungroup %>% mutate(rownum = seq_len(n())) %>% dplyr::arrange(across(all_of(temp))) %>% pull(.data$rownum)
+        }
+
+        ## adjust playstable_display_order if input$playlist_sort changes
+        observe({
+            blah <- list(input$playlist_sort) ## react to this
+            temp <- calc_playstable_order()
+            if (!identical(temp, playstable_display_order)) {
+                playstable_display_order <<- temp
+                pl_check_trigger(pl_check_trigger() + 1L)
+            }
+        })
+
+        ## the actual playstable_data is playstable_data_raw but ordered and with user-deleted rows removed
         pl_check_trigger <- reactiveVal(0)
         playstable_data_bouncy <- reactiveVal(NULL)
         playstable_data <- debounce(playstable_data_bouncy, 500)
-        ##playstable_data <- debounce(reactive({
         last_pt_hash <- ""
         observe({
             if (trace_execution) cat("checking playstable_data\n")
@@ -605,7 +622,7 @@ ovva_shiny_server <- function(app_data) {
                     if (trace_execution) cat("  playstable_data has not changed\n")
                 }
             }
-        })##, 500)
+        })
 
         observeEvent(input$randomize_playlist, {
             if (length(playstable_display_order) > 0) {
@@ -637,9 +654,10 @@ ovva_shiny_server <- function(app_data) {
         })
 
         observeEvent(input$reset_ticked, {
+            ## replace any deleted items and revert to the original ordering
             playstable_ticked <<- rep(FALSE, length(playstable_ticked))
             playstable_to_delete <<- rep(FALSE, length(playstable_to_delete))
-            playstable_display_order <<- seq_along(playstable_to_delete)
+            playstable_display_order <<- calc_playstable_order()
             is_fresh_playlist <<- FALSE
             pl_check_trigger(pl_check_trigger() + 1L)
         })
