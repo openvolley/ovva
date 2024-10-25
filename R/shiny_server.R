@@ -587,7 +587,7 @@ ovva_shiny_server <- function(app_data) {
             if (length(pls) < 1) return(seq_nrows(pl)) ## default ordering
             ## otherwise according to input$playlist_sort
             temp <- intersect(pls, names(pl))
-            pl %>% ungroup %>% mutate(rownum = seq_len(n())) %>% dplyr::arrange(across(all_of(temp))) %>% pull(.data$rownum)
+            pl %>% ungroup %>% mutate(rownum = seq_len(n())) %>% dplyr::arrange(across(all_of(temp))) %>% dplyr::pull(.data$rownum)
         }
 
         ## adjust playstable_display_order if input$playlist_sort changes
@@ -1030,15 +1030,17 @@ ovva_shiny_server <- function(app_data) {
             clip_status(NULL)
             filename <- tempfile(fileext = ".mp4")
             tryCatch({
-                chk <- sys::exec_internal("ffmpeg", "-version")
+                ovideo::ov_ffmpeg_ok(do_error = TRUE)
                 future::plan("multisession")
                 pll <- lapply(seq_nrows(playlist()), function(z) as.list(playlist()[z, ])) ## need a non-reactive list-formatted copy of this to use with future_lapply
                 tempfiles <- future.apply::future_lapply(pll, function(plitem) {
-                    ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
+                ##tempfiles <- lapply(pll), function(plitem) { ## for testing, no parallel
                     outfile <- tempfile(fileext = paste0(".", fs::path_ext(plitem$file)))
                     if (file.exists(outfile)) unlink(outfile)
-                    infile <- plitem$file
-                    res <- sys::exec_internal("ffmpeg", c("-ss", plitem$start_time, "-i", infile, "-strict", "-2", "-t", plitem$duration, outfile))
+                    infile <- tryCatch(fs::path_real(plitem$file), error = function(e) {
+                        stop("file '", plitem$file, "' could not be resolved to a real file")
+                    })
+                    res <- sys::exec_internal(unname(ovideo::ov_ffmpeg_exe()), c("-ss", plitem$start_time, "-i", infile, "-strict", "-2", "-t", plitem$duration, outfile))
                     if (res$status != 0) stop("failed to get video clip, ", rawToChar(res$stderr))
                     outfile
                 })
@@ -1047,7 +1049,7 @@ ovva_shiny_server <- function(app_data) {
                 on.exit(unlink(c(cfile, tempfiles)))
                 cat(paste0("file ", tempfiles), file = cfile, sep = "\n")
                 if (file.exists(filename)) unlink(filename)
-                res <- sys::exec_internal("ffmpeg", c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
+                res <- sys::exec_internal(unname(ovideo::ov_ffmpeg_exe()), c("-safe", 0, "-f", "concat", "-i", cfile, "-c", "copy", filename))
                 if (res$status != 0) stop("failed to combine clips, ", rawToChar(res$stderr))
                 clip_filename(filename)
                 removeModal()

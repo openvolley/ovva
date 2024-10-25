@@ -12,7 +12,7 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{datavolley}{\code{\link[datavolley:read_dv]{dv_read}}}
+  \item{datavolley}{\code{\link[datavolley]{dv_read}}}
 
   \item{ovideo}{\code{\link[ovideo:ov_video_timing]{ov_video_timing_df}}}
 }}

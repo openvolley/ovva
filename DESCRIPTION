@@ -1,6 +1,6 @@
 Package: ovva
 Title: A Shiny App for Volleyball Video Analysis
-Version: 0.12.6
+Version: 0.13.0
 Authors@R: c(person(given = "Adrien", family = "Ickowicz", role = c("aut", "cre"), email = "ickowicz.adrien@gmail.com"),
              person(given = "Ben", family = "Raymond", role = "aut"),
              person("openvolley.org", role = "org"))
@@ -37,4 +37,4 @@ Suggests:
     rintrojs,
     testthat
 Remotes: openvolley/datavolley, openvolley/ovideo, openvolley/peranavolley
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2

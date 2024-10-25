@@ -16,4 +16,4 @@
 #' @importFrom shinyWidgets pickerInput updatePickerInput
 #' @importFrom stats na.omit setNames
 #' @importFrom utils capture.output str write.csv
-NULL
+"_PACKAGE"

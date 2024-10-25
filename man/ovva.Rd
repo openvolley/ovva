@@ -2,8 +2,32 @@
 % Please edit documentation in R/ovva-package.R
 \docType{package}
 \name{ovva}
+\alias{ovva-package}
 \alias{ovva}
 \title{\pkg{ovva}}
 \description{
 A Shiny app and supporting functions for volleyball video and scouted match files.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ovva.openvolley.org}
+  \item \url{https://github.com/openvolley/ovva}
+  \item Report bugs at \url{https://github.com/openvolley/ovva/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Adrien Ickowicz \email{ickowicz.adrien@gmail.com}
+
+Authors:
+\itemize{
+  \item Ben Raymond
+}
+
+Other contributors:
+\itemize{
+  \item openvolley.org [originator]
+}
+
 }
