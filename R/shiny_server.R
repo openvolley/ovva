@@ -708,7 +708,7 @@ ovva_shiny_server <- function(app_data) {
                 ## when the table is redrawn but the selected row is not in the first few rows, need to scroll the table - use initComplete callback
                 DT::datatable(mydat, rownames = FALSE, colnames = cnames, escape = FALSE,
                               extensions = "Scroller", selection = list(mode = "single", selected = max(master_playstable_selected_row, 1L), target = "row"),
-                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollY = scrolly, scroller = TRUE, ordering = FALSE,
+                              options = list(sDom = '<"top">t<"bottom">rlp', deferRender = TRUE, scrollX = "100%", scrollY = scrolly, scroller = TRUE, ordering = FALSE,
                                              initComplete = DT::JS('function(setting, json) { Shiny.setInputValue("scroll_trigger", new Date().getTime()); }')))
             } else {
                 js_hide("dk_buts")
