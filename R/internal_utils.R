@@ -117,7 +117,25 @@ preprocess_data <- function(x, data_type = "indoor") {
                                           TRUE ~ .data$skill_type))
     ## NA skilltype causes problems, if we have multiple skills selected then it will filter out the missing skilltype (e.g. all blocks, usually)
     x$skilltype[is.na(x$skilltype) & !is.na(x$skill) & !(x$skill %in% c("Timeout", "Technical timeout", "Substitution"))] <- "no value"
-  x
+    ## use scores at start of point
+    if (!isTRUE(check_scores_start_of_point(x))) {
+        ## regenerate those columns
+        x <- x %>% group_by(.data$match_id) %>%
+            mutate(home_score_start_of_point = pmax(ifelse(.data$point_won_by %eq% .data$home_team, as.integer(.data$home_team_score - 1L), as.integer(.data$home_team_score)), 0L),
+                   visiting_score_start_of_point = pmax(ifelse(.data$point_won_by %eq% .data$visiting_team, as.integer(.data$visiting_team_score - 1L), as.integer(.data$visiting_team_score)), 0L)) %>% ungroup
+    }
+    x$home_team_score <- x$home_score_start_of_point
+    x$visiting_team_score <- x$visiting_score_start_of_point
+    x
+}
+
+## check whether we have scores at the start of the point - for historical reasons, these columns might be absent from some files
+check_scores_start_of_point <- function(x) {
+    if (!all(c("home_score_start_of_point", "visiting_score_start_of_point") %in% names(x))) return(FALSE)
+    ## the columns exist, but there is still the possibility that some matches have these values populated and some do not
+    idxh <- which(!is.na(x$home_team_score))
+    idxv <- which(!is.na(x$home_visiting_score))
+    !any(is.na(x$home_score_start_of_point[idxh])) && !any(is.na(x$visiting_score_start_of_point[idxv]))
 }
 
 ## identify whether a given string looks like a youtube video ID
