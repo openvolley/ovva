@@ -30,6 +30,17 @@ ovva_shiny_server <- function(app_data) {
             "Serve zone" = "pt_serve_zone", "Pass/dig zone" = "ts_pass_zone",
             "Setter on court" = "setter_on_court", "Opposition setter on court" = "opposition_setter_on_court", "Opposition team" = "opposition_team")
 
+        ## define shortcut keys. TODO make these configurable?
+        ## the name assigned to the char vector is the name to show in the help dialog
+        ## the name assigned to each list element is the identifier used in the dispatch code
+        ovva_shortcuts <- list(pause = setNames(c("Q", "q", "0"), "Pause"),
+                               previous_clip = setNames(c("j", "J", "4"), "Previous clip"),
+                               next_clip = setNames(c("l", "L", "6"), "Next clip"),
+                               play = setNames(c("k", "K", "5"), "Restart current clip"),
+                               rewind_5 = setNames(c("h", "H", "7"), "Rewind 5s"),
+                               play_faster = setNames(c("+"), "Increase playback speed"),
+                               play_slower = setNames(c("-"), "Decrease playback speed"))
+
         ## some inits
         master_playstable_selected_row <- -99L ## non-reactive
         is_fresh_playlist <- FALSE
@@ -1173,5 +1184,53 @@ ovva_shiny_server <- function(app_data) {
             }
             output$video_dialog <- renderUI(tags$div(class = "alert alert-danger", tags$div("Video error ", paste0("(", errmsg, "). Is the video URL correct?"), tags$br(), "Video source: ", this_src)))
         })
+
+        ## handle shortcut keys
+        ## send the shortcut definitions to the client on startup
+        evaljs(paste0("ovva_shortcut_map = ", make_js_keymap(ovva_shortcuts), ";"))
+        ## handle keypresses
+        ## note that we also have input$controlkeyup available
+        ## but we use the keydown event for consistency with ovplayer. Note that we get multiple triggers on a key being held down
+        ## note also that if a UI element is selected (active), pressing a key might activate the element (e.g. cause the selector dropdown to open)
+        observeEvent(input$controlkeydown, {
+            ## cat("controlkey: ", capture.output(str(input$controlkeydown)), "\n")
+            was_suspended <- isTRUE(input$player_suspend_state > 0)
+            if (!is.null(input$controlkeydown) && !was_suspended) {
+                ## don't process shortcut keys if the player is suspended (cursor over the plays table)
+                k <- decode_keypress(input$controlkeydown)
+                if (is_shortcut(k, ovva_shortcuts$pause)) {
+                    if (isTRUE(input$player_pause_state)) evaljs("dvpl.video_play();") else evaljs("dvpl.video_pause();")
+                } else if (is_shortcut(k, ovva_shortcuts$play)) {
+                    evaljs("dvpl.video_play();")
+                } else if (is_shortcut(k, ovva_shortcuts$previous_clip)) {
+                    evaljs("dvpl.video_prev();")
+                } else if (is_shortcut(k, ovva_shortcuts$next_clip)) {
+                    evaljs("dvpl.video_next(false);")
+                } else if (is_shortcut(k, ovva_shortcuts$rewind_5)) {
+                    evaljs("dvpl.jog(-5);")
+                } else if (is_shortcut(k, ovva_shortcuts$play_faster) && !is.null(input$playback_rate) && isTRUE(input$playback_rate < 2)) {
+                    ## handle playback speed by updating the widget, which will then trigger our downstream code
+                    updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate + 0.1)
+                } else if (is_shortcut(k, ovva_shortcuts$play_slower) && !is.null(input$playback_rate) && isTRUE(input$playback_rate > 0.1)) {
+                    updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate - 0.1)
+                }
+                ## "dvpl.fullscreen();"
+                ## "dvpl.toggle_mute();"
+            }
+        })
+
+        observeEvent(input$show_shortcuts, show_shortcuts())
+        show_shortcuts <- function(app_data, editing) {
+            show_sc <- function(sc, txt) {
+                sc_list <- ovva_shortcuts
+                bb <- if (is.null(sc_list[[sc]])) "no shortcut" else sc_list[[sc]]
+                do.call(tags$span, c(list(paste0(txt, ":")), lapply(unname(bb), function(k) tags$button(k))))
+            }
+            showModal(
+                modalDialog(title = "Keyboard shortcuts", size = "l", easyClose = TRUE,
+                            fluidRow(column(12,
+                                            do.call(tags$ul, lapply(names(ovva_shortcuts), function(nm) tags$li(show_sc(nm, names(ovva_shortcuts[[nm]])[1]))))))
+                            ))
+        }
     }
 }

@@ -302,3 +302,59 @@ icon <- function(...) shiny::icon(..., verify_fa = FALSE)
 all_or_filter <- function(x, selection) {
     if (length(selection) < 1) rep(TRUE, length(x)) else x %in% selection
 }
+
+## keypress handling
+
+## convert shortcut (defined in the server's ovva_shortcuts variable) to json representation
+shortcut2json <- function(key, to) {
+    paste0("'", tolower(grepl("Ctrl-", key, fixed = TRUE)), "|", ## ctrl
+           tolower(grepl("Alt-", key, fixed = TRUE)), "|", ## alt
+           tolower(grepl("Shift-", key, fixed = TRUE)), "|", ## shift
+           tolower(grepl("Meta-", key, fixed = TRUE)), "|", ## meta
+           sub("Ctrl-", "", sub("Alt-", "", sub("Shift-", "", sub("Meta-", "", key, fixed = TRUE), fixed = TRUE), fixed = TRUE), fixed = TRUE),
+           "': '", to, "'")
+}
+make_js_keymap <- function(sc) {
+    ## e.g. list(undo = c("Ctrl-a")) to "{'true|false|false|false|a': 'undo'}"
+    paste0("{",
+           paste(unique(unlist(lapply(seq_along(sc), function(i) {
+               if (length(sc[[i]]) > 0) shortcut2json(sc[[i]], to = names(sc)[i])
+           }))), collapse = ", "),
+           "}")
+}
+
+## helper functions for handling keypresses
+decode_keypress <- function(k) {
+    temp <- strsplit(k, "@")[[1]]
+    ## elements are 1 = modifiers_and_key, 2 = element_class, 3 = element_id, 4 = cursor_position, 5 = field_length, 6 = time
+    mycmd <- temp[1]
+    myclass <- temp[2]
+    myid <- temp[3]
+    if (!is.null(myclass) && nzchar(myclass) && myclass %in% c("form-control")) {
+        ## don't process these - they are e.g. key events in DT filter boxes
+        mycmd <- NULL
+    }
+    if (!is.null(mycmd)) {
+        ## cat("keypress: ", mycmd, " in element #", myid, " of class", myclass, "\n")
+        out <- list(ctrl = FALSE, alt = FALSE, shift = FALSE, meta = FALSE, key = "", charcode = 0L, class = myclass, id = myid)
+        mycmd <- strsplit(mycmd, "|", fixed = TRUE)[[1]] ## ctrlKey | altKey | shiftKey | metaKey | keyname | charcode
+        if (length(mycmd) >= 5) {
+            out <- list(ctrl = mycmd[1] %eq% "true", alt = mycmd[2] %eq% "true", shift = mycmd[3] %eq% "true", meta = mycmd[4] %eq% "true", key = mycmd[5], charcode = if (length(mycmd) > 5) mycmd[6] else 0L, class = myclass, id = myid)
+        }
+        out
+    } else {
+        NULL
+    }
+}
+## takes a decoded keypress object from the preceding function
+key_as_text <- function(k) paste0(if (k$ctrl) "Ctrl-", if (k$alt) "Alt-", if (k$shift) "Shift-", if (k$meta) "Meta-", k$key)
+## takes a decoded keypress object from `decode_keypress` and a shortcut and returns TRUE if it matches any of the entries in sc
+is_shortcut <- function(k, sc) {
+    as_txt <- key_as_text(k)
+    ## we first look for a match on the full key representation with modifiers (e.g. "Alt-ArrowRight")
+    ## e.g. if sc is "Alt-ArrowRight" and we press just "ArrowRight", don't want a match
+    if (any(as_txt == sc, na.rm = TRUE)) return(TRUE)
+    ## if that fails, look for an exact match in the printed representation (ignoring modifiers, e.g. "$") but only if the shortcut has no modifier
+    sc <- sc[!grepl("(Ctrl|Alt|Shift|Meta)\\-", sc)]
+    any(k$key == sc, na.rm = TRUE)
+}

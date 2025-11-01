@@ -24,6 +24,7 @@ ovva_shiny_ui_main <- function(app_data = NULL) {
     tagList(
         ## js to track size of video element
         tags$head(tags$script("var vo_rsztmr;
+var ovva_shortcut_map = {}; // populated by the shiny server on startup
 $(document).on('shiny:sessioninitialized', function() {
     $('#playstable_holder').mouseenter(dv_h_suspend); $('#playstable_holder').mouseleave(dv_h_unsuspend);
     Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
@@ -33,6 +34,23 @@ $(document).on('shiny:sessioninitialized', function() {
     function vo_doneResizing() {
       Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     }
+    function handle_key(e, updown) {
+      var el = document.activeElement;
+      var len = -1;
+      if (typeof el.value != 'undefined') { len = el.value.length; };
+      var charcode = (e.key.length === 1) ? e.key.charCodeAt(0) : '';
+      Shiny.setInputValue('controlkey' + updown, e.ctrlKey + '|' + e.altKey + '|' + e.shiftKey + '|' + e.metaKey + '|' + e.key + '|' + charcode + '@' + el.className + '@' + el.id + '@' + el.selectionStart + '@' + len + '@' + new Date().getTime(), {priority: 'event'});
+      var mappedkey = ovva_shortcut_map[e.ctrlKey + '|' + e.altKey + '|' + e.shiftKey + '|' + e.metaKey + '|' + e.key];
+      if (mappedkey) {
+        // we are handling this key, stop the event propagating
+        e.stopPropagation(); e.preventDefault();
+        return false;
+      } else {
+        return true;
+      }
+    }
+    $(document).on('keydown', function (e) { return handle_key(e, 'down'); });
+    $(document).on('keyup', function (e) { return handle_key(e, 'up'); });
 });
 function toggle_pl_item(cb) { Shiny.setInputValue('toggle_plitem', cb.id + '@' + new Date().getTime()); }
 function mp4_pl_item(cb) { Shiny.setInputValue('mp4_plitem', cb.id + '@' + new Date().getTime()); }"),
@@ -109,50 +127,52 @@ fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                 tags$div(id = "dv_h_msg", style = "color:red; margin: 8px; display:none;", "Playback suspended while mouse is over the table"),
                 uiOutput("chart_ui"))),
 tags$hr(),
-sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1),
+fluidRow(column(4, sliderInput("playback_rate", "Playback rate:", min = 0.1, max = 2.0, value = 1.0, step = 0.1)),
+         column(4, offset = 1, actionButton("show_shortcuts", "Show keyboard shortcuts"))),
 tags$hr(),
 tags$h5("Clip timing"),
-fluidRow(actionButton("timing_all_start_minus", "All start -1"),
-         actionButton("timing_all_start_plus", "All start +1"),
-         actionButton("timing_all_duration_minus", "All duration -1"),
-         actionButton("timing_all_duration_plus", "All duration +1")),
-tags$table(tags$tr(tags$th(),
-                   tags$th("Serve"),
-                   tags$th("Reception"),
-                   tags$th("Set", tags$br(), "(in reception)"),
-                   tags$th("Set", tags$br(), "(in transition)"),
-                   tags$th("Attack", tags$br(), "(in reception)"),
-                   tags$th("Attack", tags$br(), "(in transition)"),
-                   tags$th("Block", tags$br(), "(in reception)"),
-                   tags$th("Block", tags$br(), "(in transition)"),
-                   tags$th("Dig", tags$br(), "(in transition)"),
-                   tags$th("Freeball", tags$br(), "(in reception)"),
-                   tags$th("Freeball", tags$br(), "(in transition)")),
-           tags$tr(tags$th("Start offset:"),
-                   timing_tstart("Serve", "Serve", timing_df = app_data$video_timing_df),
-                   timing_tstart("Reception", "Reception", timing_df = app_data$video_timing_df), ##!!start_offset = -2),
-                   timing_tstart("Set", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tstart("Set", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tstart("Attack", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tstart("Attack", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tstart("Block", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tstart("Block", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tstart("Dig", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tstart("Freeball", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tstart("Freeball", "Transition", timing_df = app_data$video_timing_df)),
-           tags$tr(tags$th("Duration:"),
-                   timing_tdur("Serve", "Serve", timing_df = app_data$video_timing_df),
-                   timing_tdur("Reception", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tdur("Set", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tdur("Set", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tdur("Attack", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tdur("Attack", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tdur("Block", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tdur("Block", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tdur("Dig", "Transition", timing_df = app_data$video_timing_df),
-                   timing_tdur("Freeball", "Reception", timing_df = app_data$video_timing_df),
-                   timing_tdur("Freeball", "Transition", timing_df = app_data$video_timing_df))
-           ),
+fluidRow(column(12,
+                actionButton("timing_all_start_minus", "All start -1"),
+                actionButton("timing_all_start_plus", "All start +1"),
+                actionButton("timing_all_duration_minus", "All duration -1"),
+                actionButton("timing_all_duration_plus", "All duration +1"),
+                tags$table(tags$tr(tags$th(),
+                                   tags$th("Serve"),
+                                   tags$th("Reception"),
+                                   tags$th("Set", tags$br(), "(in reception)"),
+                                   tags$th("Set", tags$br(), "(in transition)"),
+                                   tags$th("Attack", tags$br(), "(in reception)"),
+                                   tags$th("Attack", tags$br(), "(in transition)"),
+                                   tags$th("Block", tags$br(), "(in reception)"),
+                                   tags$th("Block", tags$br(), "(in transition)"),
+                                   tags$th("Dig", tags$br(), "(in transition)"),
+                                   tags$th("Freeball", tags$br(), "(in reception)"),
+                                   tags$th("Freeball", tags$br(), "(in transition)")),
+                           tags$tr(tags$th("Start offset:"),
+                                   timing_tstart("Serve", "Serve", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Reception", "Reception", timing_df = app_data$video_timing_df), ##!!start_offset = -2),
+                                   timing_tstart("Set", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Set", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Attack", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Attack", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Block", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Block", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Dig", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Freeball", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tstart("Freeball", "Transition", timing_df = app_data$video_timing_df)),
+                           tags$tr(tags$th("Duration:"),
+                                   timing_tdur("Serve", "Serve", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Reception", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Set", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Set", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Attack", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Attack", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Block", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Block", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Dig", "Transition", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Freeball", "Reception", timing_df = app_data$video_timing_df),
+                                   timing_tdur("Freeball", "Transition", timing_df = app_data$video_timing_df))
+                           ))),
 tags$div(style = "display:none;", icon("question-circle")), ## to ensure that font-awesome dependency is included
 tags$script("set_vspinner = function() { $('#dv_player').addClass('loading'); }"),
 tags$script("remove_vspinner = function() { $('#dv_player').removeClass('loading'); }"),
