@@ -126,7 +126,12 @@ preprocess_data <- function(x, data_type = "indoor") {
     }
     x$home_team_score <- x$home_score_start_of_point
     x$visiting_team_score <- x$visiting_score_start_of_point
-    x
+    mutate(x, end_zone_subzone = case_when(is.na(.data$end_subzone) & is.na(.data$end_zone) ~ "[missing]",
+                                           is.na(.data$end_zone) ~ "[missing]", ## zone missing but not subzone, should not happen, just treat it as missing
+                                           is.na(.data$end_subzone) ~ as.character(.data$end_zone),
+                                           TRUE ~ paste0(.data$end_zone, .data$end_subzone)),
+           end_zone = case_when(is.na(.data$end_zone) ~ "[missing]", TRUE ~ as.character(.data$end_zone)),
+           start_zone = case_when(is.na(.data$start_zone) ~ "[missing]", TRUE ~ as.character(.data$start_zone)))
 }
 
 ## check whether we have scores at the start of the point - for historical reasons, these columns might be absent from some files

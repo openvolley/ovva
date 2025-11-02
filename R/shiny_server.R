@@ -9,7 +9,7 @@ ovva_shiny_server <- function(app_data) {
             "Skill rating code" = "evaluation_code", "Skill rating" = "evaluation",
             "Attack code" = "attack_code", "Attack code description" = "attack_description",
             "Setter call" = "set_code", "Setter call description" = "set_description", ##"set_type",
-            "Start zone" = "start_zone", "End zone" = "end_zone", "End subzone" = "end_subzone",
+            "Start zone" = "start_zone", "End zone" = "end_zone", "End zone and subzone" = "end_zone_subzone",
             "End cone" = "end_cone",
             "Skill subtype" = "skill_subtype", "Number of players" = "num_players", ##"num_players_numeric",
             "Special code" = "special_code",
