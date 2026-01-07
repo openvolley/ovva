@@ -25,7 +25,7 @@ ovva_shiny_ui_main <- function(app_data = NULL) {
         ## js to track size of video element
         tags$head(tags$script("var vo_rsztmr;
 var ovva_shortcut_map = {}; // populated by the shiny server on startup
-$(document).on('shiny:sessioninitialized', function() {
+Shiny.initializedPromise.then(function() {
     $('#playstable_holder').mouseenter(dv_h_suspend); $('#playstable_holder').mouseleave(dv_h_unsuspend);
     Shiny.setInputValue('dv_height', $('#dv_player').innerHeight()); Shiny.setInputValue('dv_width', $('#dv_player').innerWidth()); Shiny.setInputValue('dvyt_height', $('#dvyt_player').innerHeight()); Shiny.setInputValue('dvyt_width', $('#dvyt_player').innerWidth()); Shiny.setInputValue('vo_voffset', $('#video_holder').innerHeight());
     $(window).resize(function() {
