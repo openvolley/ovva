@@ -113,7 +113,7 @@ fluidRow(column(8, tags$div(id = "video_holder", style = "position:relative;",
                             ovideo::ov_video_player(id = "dv_player", type = "local", controls = FALSE, poster = "data:image/gif,AAAA", style = "border: 1px solid black; width: 100%;", onloadstart = "set_vspinner();", oncanplay = "remove_vspinner();", onerror = "dv_player_onerror(event);"),
                             ovideo::ov_video_player(id = "dvyt_player", type = "youtube", controls = FALSE, style = "border: 1px solid black; width: 100%; display:none;"), ## start hidden, note that type = "youtube" also works if we change to twitch ## height: 480px;
                             tags$div(id = "dv_h_overlay", style = "justify-content:center; align-items:center; color:white; font-size:96px; background-color:#00000080; display:none;", tags$span(icon("pause-circle", style = "vertical-align:middle;"))),
-                            tags$img(id = "video_overlay_img"),
+                            ## tags$img(id = "video_overlay_img"), ## temporarily at least, just remove it, because it does not remain aligned with the video overlay window when the pause overlay is shown or we go to full screen, and it shows as a thin border
                             tags$div(id = "vwm", tags$img(id = "vwm_img"))
                             ),
                 plotOutput("video_overlay"),
