@@ -139,7 +139,7 @@ check_scores_start_of_point <- function(x) {
     if (!all(c("home_score_start_of_point", "visiting_score_start_of_point") %in% names(x))) return(FALSE)
     ## the columns exist, but there is still the possibility that some matches have these values populated and some do not
     idxh <- which(!is.na(x$home_team_score))
-    idxv <- which(!is.na(x$home_visiting_score))
+    idxv <- which(!is.na(x$visiting_team_score))
     !any(is.na(x$home_score_start_of_point[idxh])) && !any(is.na(x$visiting_score_start_of_point[idxv]))
 }
 
