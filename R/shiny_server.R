@@ -65,6 +65,8 @@ ovva_shiny_server <- function(app_data) {
             }
         })
 
+        output$ui_main <- renderUI(ovva_shiny_ui_main(app_data))
+
         ## highlight the season selector if it's empty
         observe({
             if (isTRUE(app_data$no_initial_season_selection)) {
