@@ -352,9 +352,18 @@ decode_keypress <- function(k) {
     }
 }
 ## takes a decoded keypress object from the preceding function
-key_as_text <- function(k) paste0(if (k$ctrl) "Ctrl-", if (k$alt) "Alt-", if (k$shift) "Shift-", if (k$meta) "Meta-", k$key)
+key_as_text <- function(k) {
+    out <- paste0(if (isTRUE(k$ctrl)) "Ctrl-", if (isTRUE(k$alt)) "Alt-", if (isTRUE(k$shift)) "Shift-", if (isTRUE(k$meta)) "Meta-", k$key)
+    if (length(out) < 1) {
+        ""
+    } else {
+        out
+    }
+}
+
 ## takes a decoded keypress object from `decode_keypress` and a shortcut and returns TRUE if it matches any of the entries in sc
 is_shortcut <- function(k, sc) {
+    if (length(k) < 1) return(FALSE)
     as_txt <- key_as_text(k)
     ## we first look for a match on the full key representation with modifiers (e.g. "Alt-ArrowRight")
     ## e.g. if sc is "Alt-ArrowRight" and we press just "ArrowRight", don't want a match
