@@ -1200,24 +1200,27 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(input$controlkeydown) && !was_suspended) {
                 ## don't process shortcut keys if the player is suspended (cursor over the plays table)
                 k <- decode_keypress(input$controlkeydown)
-                if (is_shortcut(k, ovva_shortcuts$pause)) {
-                    if (isTRUE(input$player_pause_state)) evaljs("dvpl.video_play();") else evaljs("dvpl.video_pause();")
-                } else if (is_shortcut(k, ovva_shortcuts$play)) {
-                    evaljs("dvpl.video_play();")
-                } else if (is_shortcut(k, ovva_shortcuts$previous_clip)) {
-                    evaljs("dvpl.video_prev();")
-                } else if (is_shortcut(k, ovva_shortcuts$next_clip)) {
-                    evaljs("dvpl.video_next(false);")
-                } else if (is_shortcut(k, ovva_shortcuts$rewind_5)) {
-                    evaljs("dvpl.jog(-5);")
-                } else if (is_shortcut(k, ovva_shortcuts$play_faster) && !is.null(input$playback_rate) && isTRUE(input$playback_rate < 2)) {
-                    ## handle playback speed by updating the widget, which will then trigger our downstream code
-                    updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate + 0.1)
-                } else if (is_shortcut(k, ovva_shortcuts$play_slower) && !is.null(input$playback_rate) && isTRUE(input$playback_rate > 0.1)) {
-                    updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate - 0.1)
+                ## also don't process if we are in a UI control element (e.g. the select box for sorting the plays list, or a filter input box)
+                if (!isTRUE(k$id %in% c("playlist_sort-selectized", "adFilter_list-selectized", "adFilterB_list-selectized") || k$class == "inner open")) {
+                    if (is_shortcut(k, ovva_shortcuts$pause)) {
+                        if (isTRUE(input$player_pause_state)) evaljs("dvpl.video_play();") else evaljs("dvpl.video_pause();")
+                    } else if (is_shortcut(k, ovva_shortcuts$play)) {
+                        evaljs("dvpl.video_play();")
+                    } else if (is_shortcut(k, ovva_shortcuts$previous_clip)) {
+                        evaljs("dvpl.video_prev();")
+                    } else if (is_shortcut(k, ovva_shortcuts$next_clip)) {
+                        evaljs("dvpl.video_next(false);")
+                    } else if (is_shortcut(k, ovva_shortcuts$rewind_5)) {
+                        evaljs("dvpl.jog(-5);")
+                    } else if (is_shortcut(k, ovva_shortcuts$play_faster) && !is.null(input$playback_rate) && isTRUE(input$playback_rate < 2)) {
+                        ## handle playback speed by updating the widget, which will then trigger our downstream code
+                        updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate + 0.1)
+                    } else if (is_shortcut(k, ovva_shortcuts$play_slower) && !is.null(input$playback_rate) && isTRUE(input$playback_rate > 0.1)) {
+                        updateSliderInput(session, inputId = "playback_rate", value = input$playback_rate - 0.1)
+                    }
+                    ## "dvpl.fullscreen();"
+                    ## "dvpl.toggle_mute();"
                 }
-                ## "dvpl.fullscreen();"
-                ## "dvpl.toggle_mute();"
             }
         })
 
