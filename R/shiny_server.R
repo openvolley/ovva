@@ -827,7 +827,8 @@ ovva_shiny_server <- function(app_data) {
                     path_hashes[!is_url] <- vapply(fs::path_dir(fs::path_real(meta_video$file[!is_url])), digest::digest, algo = "sha1", FUN.VALUE = "")
 
                     ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
-                    meta_video$video_src <- paste_url(app_data$video_server_url, path_hashes, basename(meta_video$file))
+                    video_host <- if (is.null(session$clientData$url_hostname)) "localhost" else session$clientData$url_hostname
+                    meta_video$video_src <- paste_url(paste0("http://", video_host, ":", app_data$video_server_port), path_hashes, basename(meta_video$file))
                     ## replace URLs with verbatim copy of original info
                     meta_video$video_src[is_url] <- meta_video$file[is_url]
                 } else if (is.function(app_data$video_serve_method)) {
@@ -1025,7 +1026,7 @@ ovva_shiny_server <- function(app_data) {
             ## also check that videos are not remote - exclude videos served by http[s], but not if they are being served by the local (ovva-initiated) server
             temp_src <- playlist()$video_src
             if (is.string(app_data$video_serve_method) && app_data$video_serve_method %in% c("lighttpd", "servr")) {
-                is_local_url <- substr(temp_src, 1, nchar(app_data$video_server_url)) == app_data$video_server_url
+                is_local_url <- grepl(paste0(":", app_data$video_server_port, "/"), temp_src, fixed = TRUE)
                 temp_src[which(is_local_url)] <- "" ## these are ok
             }
             ok <- ok && !any(grepl("^https?://", temp_src, ignore.case = TRUE))
