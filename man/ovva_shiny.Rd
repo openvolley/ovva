@@ -11,6 +11,9 @@ ovva_shiny(
   video_server = "lighttpd",
   launch_browser = TRUE,
   video_timing_df = ov_video_timing_df(),
+  host = NULL,
+  port = NULL,
+  video_server_port = NULL,
   ...
 )
 }
@@ -26,6 +29,12 @@ ovva_shiny(
 \item{launch_browser}{logical: if \code{TRUE}, launch the app in the system's default web browser (passed to \code{\link[shiny]{runApp}}'s \code{launch.browser} parameter). If \code{NULL}, don't launch the app, just return the \code{shinyApp} object}
 
 \item{video_timing_df}{data.frame: data.frame of default clip timings}
+
+\item{host}{string: the host IP address to bind to. If \code{NULL}, uses Shiny's default (\code{127.0.0.1})}
+
+\item{port}{integer: the port to run the app on. If \code{NULL}, uses a random available port}
+
+\item{video_server_port}{integer: the port for the video server. Only relevant if \code{video_server} is "lighttpd" or "servr". If \code{NULL}, uses a random port between 8001 and 12000}
 
 \item{...}{: additional parameters passed to the UI and server functions}
 }

@@ -8,7 +8,7 @@
 #' @param video_timing_df data.frame: data.frame of default clip timings
 #' @param host string: the host IP address to bind to. If \code{NULL}, uses Shiny's default (\code{127.0.0.1})
 #' @param port integer: the port to run the app on. If \code{NULL}, uses a random available port
-#' @param video_server_port integer: the port for the video server. If \code{NULL}, uses a random port between 8001 and 12000
+#' @param video_server_port integer: the port for the video server. Only relevant if \code{video_server} is "lighttpd" or "servr". If \code{NULL}, uses a random port between 8001 and 12000
 #' @param ... : additional parameters passed to the UI and server functions
 #'
 #' @seealso \code{\link{ovva_shiny_demo}}
@@ -53,7 +53,7 @@ ovva_shiny <- function(data_path, playlist_handler = ovva_playlist_handler(), hi
     }
     ## sort out the video server
     if (is.function(video_server) || (is.string(video_server) && video_server == "none")) {
-        vsrv <- list(method = video_server, url = NULL, dir = NULL, port = NULL)
+        vsrv <- list(method = video_server, url = NULL, dir = NULL, port = NULL) ## port isn't used in this case
     } else {
         vsrv <- ovva_video_server(method = video_server, port = video_server_port)
         onStop(function() try({ vsrv$cleanup_fun() }, silent = TRUE))
