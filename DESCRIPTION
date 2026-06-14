@@ -3,6 +3,7 @@ Title: A Shiny App for Volleyball Video Analysis
 Version: 0.15.0
 Authors@R: c(person(given = "Adrien", family = "Ickowicz", role = c("aut", "cre"), email = "ickowicz.adrien@gmail.com"),
              person(given = "Ben", family = "Raymond", role = "aut"),
+             person(given = "Tobias", family = "Maier", role = "aut"),
              person("openvolley.org", role = "org"))
 Description: A Shiny app and supporting functions for analysis of volleyball video and scouted match files.
 URL: https://ovva.openvolley.org, https://github.com/openvolley/ovva
