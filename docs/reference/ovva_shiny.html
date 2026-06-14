@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ovva</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,6 +44,9 @@
 <span>  video_server <span class="op">=</span> <span class="st">"lighttpd"</span>,</span>
 <span>  launch_browser <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  video_timing_df <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/ovideo/man/ov_video_timing.html" class="external-link">ov_video_timing_df</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  host <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  port <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  video_server_port <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -76,6 +79,18 @@
 <dd><p>data.frame: data.frame of default clip timings</p></dd>
 
 
+<dt id="arg-host">host<a class="anchor" aria-label="anchor" href="#arg-host"></a></dt>
+<dd><p>string: the host IP address to bind to. If <code>NULL</code>, uses Shiny's default (<code>127.0.0.1</code>)</p></dd>
+
+
+<dt id="arg-port">port<a class="anchor" aria-label="anchor" href="#arg-port"></a></dt>
+<dd><p>integer: the port to run the app on. If <code>NULL</code>, uses a random available port</p></dd>
+
+
+<dt id="arg-video-server-port">video_server_port<a class="anchor" aria-label="anchor" href="#arg-video-server-port"></a></dt>
+<dd><p>integer: the port for the video server. Only relevant if <code>video_server</code> is "lighttpd" or "servr". If <code>NULL</code>, uses a random port between 8001 and 12000</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>: additional parameters passed to the UI and server functions</p></dd>
 
@@ -102,7 +117,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Adrien Ickowicz, Ben Raymond.</p>
+  <p>Developed by Adrien Ickowicz, Ben Raymond, Tobias Maier.</p>
 </div>
 
 <div class="pkgdown-footer-right">
