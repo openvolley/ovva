@@ -1117,14 +1117,14 @@ ovva_shiny_server <- function(app_data) {
             if (!is.null(my_height) && as.numeric(my_height) > 0) {
                 vo_height(as.numeric(my_height))
                 ## +1 because of 1px border on video element
-                evaljs(paste0("document.getElementById('video_overlay').style.height = '", vo_height()+1, "px';"))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '", vo_height()+1, "px';"))
-                evaljs(paste0("document.getElementById('dv_h_overlay').style.height = '", vo_height()+1, "px';"))
+                evaljs(paste0("if (document.getElementById('video_overlay')) { document.getElementById('video_overlay').style.height = '", vo_height()+1, "px'; }"))
+                evaljs(paste0("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.height = '", vo_height()+1, "px'; }"))
+                evaljs(paste0("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.height = '", vo_height()+1, "px'; }"))
             } else {
                 vo_height("auto")
-                evaljs(paste0("document.getElementById('video_overlay').style.height = '400px';"))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.height = '400px';"))
-                evaljs(paste0("document.getElementById('dv_h_overlay').style.height = '400px';"))
+                evaljs(paste0("if (document.getElementById('video_overlay')) { document.getElementById('video_overlay').style.height = '400px'; }"))
+                evaljs(paste0("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.height = '400px'; }"))
+                evaljs(paste0("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.height = '400px'; }"))
             }
         })
         ## width of the video player element
@@ -1133,24 +1133,24 @@ ovva_shiny_server <- function(app_data) {
             my_width <- if (video_player_type() %in% c("youtube", "twitch")) input$dvyt_width else input$dv_width
             if (!is.null(my_width) && as.numeric(my_width) > 0) {
                 vo_width(as.numeric(my_width))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '", vo_width()+1, "px';"))
-                evaljs(paste0("document.getElementById('dv_h_overlay').style.width = '", vo_width()+1, "px';"))
+                evaljs(paste0("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.width = '", vo_width()+1, "px'; }"))
+                evaljs(paste0("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.width = '", vo_width()+1, "px'; }"))
             } else {
                 vo_width("auto")
-                evaljs(paste0("document.getElementById('video_overlay_img').style.width = '600px';"))
-                evaljs(paste0("document.getElementById('dv_h_overlay').style.width = '600px';"))
+                evaljs(paste0("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.width = '600px'; }"))
+                evaljs(paste0("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.width = '600px'; }"))
             }
         })
         ## height of the video player container, use as negative vertical offset on the overlay element
         observe({
             if (!is.null(input$vo_voffset) && as.numeric(input$vo_voffset) > 0) {
-                evaljs(paste0("document.getElementById('video_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
-                evaljs(paste0("document.getElementById('video_overlay_img').style.marginTop = '-", input$vo_voffset, "px';"))
-                evaljs(paste0("document.getElementById('dv_h_overlay').style.marginTop = '-", input$vo_voffset, "px';"))
+                evaljs(paste0("if (document.getElementById('video_overlay')) { document.getElementById('video_overlay').style.marginTop = '-", input$vo_voffset, "px'; }"))
+                evaljs(paste0("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.marginTop = '-", input$vo_voffset, "px'; }"))
+                evaljs(paste0("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.marginTop = '-", input$vo_voffset, "px'; }"))
             } else {
-                evaljs("document.getElementById('video_overlay').style.marginTop = '0px';")
-                evaljs("document.getElementById('video_overlay_img').style.marginTop = '0px';")
-                evaljs("document.getElementById('dv_h_overlay').style.marginTop = '0px';")
+                evaljs("if (document.getElementById('video_overlay')) { document.getElementById('video_overlay').style.marginTop = '0px'; }")
+                evaljs("if (document.getElementById('video_overlay_img')) { document.getElementById('video_overlay_img').style.marginTop = '0px'; }")
+                evaljs("if (document.getElementById('dv_h_overlay')) { document.getElementById('dv_h_overlay').style.marginTop = '0px'; }")
             }
         })
 
