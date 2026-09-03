@@ -98,12 +98,16 @@ ovva_shiny_server <- function(app_data) {
                     sdigest <- digest::digest(input$season)
                     if (trace_execution) cat("recalculating meta\n")
                     showModal(modalDialog(title = "Processing match metadata ...", footer = NULL, "Please wait"))
-                    if (file.exists(file.path(get_data_paths()[[input$season]], "allmeta.rds"))) {
+                    datapth <- get_data_paths()[[input$season]]
+                    if (!is.null(app_data$season_hook) && is.function(app_data$season_hook)) {
+                        try(app_data$season_hook(datapth)) ## run for side effects, if defined
+                    }
+                    if (file.exists(file.path(datapth, "allmeta.rds"))) {
                         ## use allmeta.rds if available
-                        tmp <- readRDS(file.path(get_data_paths()[[input$season]], "allmeta.rds"))
+                        tmp <- readRDS(file.path(datapth, "allmeta.rds"))
                         out <- lapply(tmp, function(z) z$meta)
                     } else {
-                        myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                        myfiles <- dir(datapth, pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
                         dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
                         dvargs$metadata_only <- TRUE
                         out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
@@ -175,11 +179,11 @@ ovva_shiny_server <- function(app_data) {
                         } else {
                             ## will also need to check actual plays data to remove any files with all-missing video times
                             showModal(modalDialog(title = "Processing match data ...", footer = NULL, "Please wait"))
-                            if (file.exists(file.path(get_data_paths()[[input$season]], "alldata.rds"))) {
+                            if (file.exists(file.path(datapth, "alldata.rds"))) {
                                 ## use alldata.rds if available
-                                mydat <- readRDS(file.path(get_data_paths()[[input$season]], "alldata.rds"))
+                                mydat <- readRDS(file.path(datapth, "alldata.rds"))
                             } else {
-                                myfiles <- dir(get_data_paths()[[input$season]], pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                                myfiles <- dir(datapth, pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
                                 dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
                                 if (!"skill_evaluation_decode" %in% names(dvargs)) dvargs$skill_evaluation_decode <- "guess"
                                 mydat <- bind_rows(lapply(myfiles, function(z) if (grepl("psvb$", z)) {
