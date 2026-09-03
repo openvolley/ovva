@@ -23,6 +23,7 @@ Useful links:
 Authors:
 \itemize{
   \item Ben Raymond
+  \item Tobias Maier
 }
 
 Other contributors:
