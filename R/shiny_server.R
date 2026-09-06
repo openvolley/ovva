@@ -92,7 +92,9 @@ ovva_shiny_server <- function(app_data) {
         empty_video_list <- dplyr::tibble(match_id = character(), filename = character(), video_source = character())
         video_list <- reactiveVal(empty_video_list)
         ## process metadata for selected season matches and update pbp reactiveVal accordingly
+        force_meta_reprocess <- reactiveVal(0L)
         meta <- reactive({
+            blah <- force_meta_reprocess() ## react to this
             if (!is.null(input$season) && input$season %in% season_choices()) {
                 isolate({
                     sdigest <- digest::digest(input$season)

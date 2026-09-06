@@ -59,7 +59,7 @@ tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;}
 ),
 shiny::wellPanel(
 fluidRow(column(4, tags$h5("1. Select data"),
-                fluidRow(column(6, tags$div(id = "season_highlight", selectInput("season", label = "Data set", choices = NULL)),
+                fluidRow(column(9, tags$div(id = "season_highlight", selectInput("season", label = "Data set", choices = NULL)),
                                 pickerInput(inputId = "game_table_dropdown", label = "Games", choices = NULL, options = list(`actions-box` = TRUE), multiple = TRUE),
                                 uiOutput("no_game_data"), uiOutput("processing_note")))),
          column(8, tags$h5("2. Apply filters"),
