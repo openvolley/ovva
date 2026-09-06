@@ -100,30 +100,37 @@ ovva_shiny_server <- function(app_data) {
                     sdigest <- digest::digest(input$season)
                     if (trace_execution) cat("recalculating meta\n")
                     showModal(modalDialog(title = "Processing match metadata ...", footer = NULL, "Please wait"))
-                    datapth <- get_data_paths()[[input$season]]
-                    if (!is.null(app_data$season_hook) && is.function(app_data$season_hook)) {
-                        try(app_data$season_hook(datapth)) ## run for side effects, if defined
-                    }
-                    if (file.exists(file.path(datapth, "allmeta.rds"))) {
-                        ## use allmeta.rds if available
-                        tmp <- readRDS(file.path(datapth, "allmeta.rds"))
-                        out <- lapply(tmp, function(z) z$meta)
-                    } else {
-                        myfiles <- dir(datapth, pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
-                        dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
-                        dvargs$metadata_only <- TRUE
-                        out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
-                                                               pv_read(z)$meta
-                                                           } else {
-                                                               dvargs$filename <- z
-                                                               do.call(dv_read, dvargs)$meta
-                                                           })
-                    }
-                    ## augment the match_id values with input$season, in case there are the same matches in different data sets (seasons)
-                    out <- lapply(out, function(z) { z$match_id <- paste0(sdigest, "|", z$match_id); z })
-                    if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
-                        try(out <- lapply(out, app_data$meta_preprocess))
-                    }
+                    withProgress(message = "Processing", value = 0, {
+                        datapth <- get_data_paths()[[input$season]]
+                        if (!is.null(app_data$season_hook) && is.function(app_data$season_hook)) {
+                            try(app_data$season_hook(datapth)) ## run for side effects, if defined
+                        }
+                        if (file.exists(file.path(datapth, "allmeta.rds"))) {
+                            ## use allmeta.rds if available
+                            tmp <- readRDS(file.path(datapth, "allmeta.rds"))
+                            out <- lapply(tmp, function(z) z$meta)
+                        } else {
+                            myfiles <- dir(datapth, pattern = "\\.(dvw|psvb)$", ignore.case = TRUE, full.names = TRUE)
+                            dvargs <- if ("dv_read_args" %in% app_data) app_data$dv_read_args else list()
+                            dvargs$metadata_only <- TRUE
+                            out <- lapply(myfiles, function(z) if (grepl("psvb$", z, ignore.case = TRUE)) {
+                                                                   pv_read(z)$meta
+                                                               } else {
+                                                                   dvargs$filename <- z
+                                                                   do.call(dv_read, dvargs)$meta
+                                                               })
+                        }
+                        ## augment the match_id values with input$season, in case there are the same matches in different data sets (seasons)
+                        out <- lapply(out, function(z) { z$match_id <- paste0(sdigest, "|", z$match_id); z })
+                        if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
+                            try({
+                                for (ii in seq_along(out)) {
+                                    setProgress(message = paste("Processing match", ii, "of", length(out)), value = ii / length(out))
+                                    out[[ii]] <- app_data$meta_preprocess(out[[ii]])
+                                }
+                            })
+                        }
+                    })
                     ## check for duplicate match IDs - these could have different video files, which is too much hassle to handle
                     if (any(duplicated(lapply(out, function(z) z$match_id)))) {
                         output$processing_note <- renderUI(tags$div(class = "alert alert-danger", "There are duplicate match IDs"))
