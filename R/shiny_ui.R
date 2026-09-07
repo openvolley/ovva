@@ -23,7 +23,7 @@ ovva_shiny_ui <- function(app_data) {
 ovva_shiny_ui_main <- function(app_data = NULL) {
     tagList(
         ## js to track size of video element
-        tags$head(tags$script("var vo_rsztmr;
+        tags$head(tags$script(HTML("var vo_rsztmr;
 var ovva_shortcut_map = {}; // populated by the shiny server on startup
 Shiny.initializedPromise.then(function() {
     $('#playstable_holder').mouseenter(dv_h_suspend); $('#playstable_holder').mouseleave(dv_h_unsuspend);
@@ -37,7 +37,10 @@ Shiny.initializedPromise.then(function() {
     function handle_key(e, updown) {
       var el = document.activeElement;
       var len = -1;
-      if (typeof el.value != 'undefined') { len = el.value.length; };
+      if (el.className.search(/(form-control|shiny-bound-input)/) > -1 || el.id.search(/(bs-select|-selectized)/) > -1) {
+          return true; // don't handle key if in a text input field
+      }
+      if (typeof el.value != 'undefined') { len = el.value.length; }
       var charcode = (e.key.length === 1) ? e.key.charCodeAt(0) : '';
       Shiny.setInputValue('controlkey' + updown, e.ctrlKey + '|' + e.altKey + '|' + e.shiftKey + '|' + e.metaKey + '|' + e.key + '|' + charcode + '@' + el.className + '@' + el.id + '@' + el.selectionStart + '@' + len + '@' + new Date().getTime(), {priority: 'event'});
       var mappedkey = ovva_shortcut_map[e.ctrlKey + '|' + e.altKey + '|' + e.shiftKey + '|' + e.metaKey + '|' + e.key];
@@ -53,7 +56,7 @@ Shiny.initializedPromise.then(function() {
     $(document).on('keyup', function (e) { return handle_key(e, 'up'); });
 });
 function toggle_pl_item(cb) { Shiny.setInputValue('toggle_plitem', cb.id + '@' + new Date().getTime()); }
-function mp4_pl_item(cb) { Shiny.setInputValue('mp4_plitem', cb.id + '@' + new Date().getTime()); }"),
+function mp4_pl_item(cb) { Shiny.setInputValue('mp4_plitem', cb.id + '@' + new Date().getTime()); }")),
 tags$script("dv_h_ctr = false; dv_h_suspend = function() { if (!dv_h_ctr) { dv_h_ctr = dvpl.suspend(); }}; dv_h_unsuspend = function() { if (dv_h_ctr) { dv_h_ctr = false; dvpl.unsuspend(); }}; "),
 tags$style(".showhide {border-radius: 20px; padding: 6px 9px; background: #668;} .showhide:hover {background: #668;} .showhide:focus {background: #668;} #video_holder:not(:fullscreen) #dvyt_player {height:480px;} #video_holder:fullscreen #dvyt_player {height:100vh;} .reminder { box-shadow:0 0 4px 4px #E87322B0; } #season_highlight { padding:2px; border-radius:6px; }"),
 ),
