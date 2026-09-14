@@ -37,8 +37,8 @@ Shiny.initializedPromise.then(function() {
     function handle_key(e, updown) {
       var el = document.activeElement;
       var len = -1;
-      if (el.className.search(/(form-control|shiny-bound-input)/) > -1 || el.id.search(/(bs-select|-selectized)/) > -1) {
-          return true; // don't handle key if in a text input field
+      if (el.className.search(/(form-control|shiny-bound-input)/) > -1 || el.id.search(/(bs-select|-selectized|snipcart)/) > -1 || $('body').attr('class').search(/(modal-open|snip-open)/)) {
+          return true; // don't handle key if in a text input field or a popup is showing
       }
       if (typeof el.value != 'undefined') { len = el.value.length; }
       var charcode = (e.key.length === 1) ? e.key.charCodeAt(0) : '';

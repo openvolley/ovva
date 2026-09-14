@@ -124,8 +124,9 @@ ovva_shiny_server <- function(app_data) {
                         out <- lapply(out, function(z) { z$match_id <- paste0(sdigest, "|", z$match_id); z })
                         if (!is.null(app_data$meta_preprocess) && is.function(app_data$meta_preprocess)) {
                             try({
+                                p_at <- round(seq(1, length(out), length.out = 10)) ## progress updates at these indices
                                 for (ii in seq_along(out)) {
-                                    setProgress(message = paste("Processing match", ii, "of", length(out)), value = ii / length(out))
+                                    if (ii %in% p_at) setProgress(message = paste("Processing match", ii, "of", length(out)), value = ii / length(out))
                                     out[[ii]] <- app_data$meta_preprocess(out[[ii]])
                                 }
                             })
