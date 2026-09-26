@@ -842,7 +842,7 @@ ovva_shiny_server <- function(app_data) {
 
                     ## so the video_src is the symlink (i.e. hashed name, the directory) then the file name itself
                     video_host <- if (is.null(session$clientData$url_hostname)) "localhost" else session$clientData$url_hostname
-                    meta_video$video_src <- paste_url(paste0("http://", video_host, ":", app_data$video_server_port), path_hashes, basename(meta_video$file))
+                    meta_video$video_src <- paste_url(paste0("http://", video_host, ":", app_data$video_server_port), path_hashes, basename(fs::fs_path(meta_video$file)))
                     ## replace URLs with verbatim copy of original info
                     meta_video$video_src[is_url] <- meta_video$file[is_url]
                 } else if (is.function(app_data$video_serve_method)) {
